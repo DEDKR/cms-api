@@ -1,0 +1,32 @@
+﻿# Build results
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / VS Code (на всякий случай)
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+appsettings.Development.json
+appsettings.*.local.json
+.env
+
+# Publish
+publish/
+
+# NuGet
+*.nupkg
