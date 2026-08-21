@@ -10,5 +10,8 @@
         public List<CaseAppealDto>? Appeals { get; set; }
         public List<CaseHistoryDto>? CaseHistories { get; set; }
         public List<CaseListDto>? RelatedCases { get; set; }
+        public List<CaseNotificationDto>? Notifications { get; set; }
+        public List<CaseWarnings>? Warnings { get; set; }
+        public List<CaseCode>? CaseCodes { get; set; }
     }
 }

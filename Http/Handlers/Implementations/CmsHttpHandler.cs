@@ -88,6 +88,29 @@ namespace CmsApi.Http.Handlers.Implementations
                         PropertyNameCaseInsensitive = true
                     });
 
+                if (result.StatusCode == StatusCodes.Status401Unauthorized)
+                {
+                    _logger.LogWarning("Case Detail API token expired. Refresh olunur.");
+
+                    await _ecmsAuthService.RefreshTokenAsync();
+
+                    token = TokenCache.Get();
+
+                    _httpClient.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue("Bearer", token.AccessToken);
+
+                    response = await _httpClient.GetAsync(url);
+                    jsonString = await response.Content.ReadAsStringAsync();
+
+                    result = JsonSerializer.Deserialize<CmsApiResponse<DocumentDto>>(
+                        jsonString,
+                        new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+                }
+
+
                 if (result is null)
                 {
                     _logger.LogError("Notification detail response deserialize olunmadı.");

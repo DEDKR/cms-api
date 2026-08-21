@@ -10,5 +10,7 @@ namespace CmsApi.Repositories.Interfaces
         Task<PagedResult<NotificationListItemDto>> GetNotifications(NoitifcationRequestDto noitifcationRequestDto);
 
         Task<int> GetNewNotificationsCount();
+
+        Task<NotificationStatisticDto> GetNotificationStatistics(NotificationStatisticRequestDto notificationStatisticRequestDto);
     }
 }

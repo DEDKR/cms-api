@@ -18,7 +18,7 @@ namespace CmsApi.Services.Implementations
 
         public async Task<int> GetNewNotificationsCount()
         {
-           return await _notificationRepository.GetNewNotificationsCount();
+            return await _notificationRepository.GetNewNotificationsCount();
         }
 
         public async Task<NotificationDetailDto> GetNotificationDetailDtoAsync(long id)
@@ -40,6 +40,11 @@ namespace CmsApi.Services.Implementations
         public Task<PagedResult<NotificationListItemDto>> GetNotifications(NoitifcationRequestDto noitifcationRequestDto)
         {
             return _notificationRepository.GetNotifications(noitifcationRequestDto);
+        }
+
+        public async Task<NotificationStatisticDto> GetNotificationStatistics(NotificationStatisticRequestDto notificationStatisticRequestDto)
+        {
+            return await _notificationRepository.GetNotificationStatistics(notificationStatisticRequestDto);
         }
 
         public async Task<int> MakeReadNotification(long id)

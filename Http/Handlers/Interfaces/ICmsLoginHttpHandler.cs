@@ -1,7 +1,7 @@
 ﻿using CmsApi.DTOs.ApiDtos;
+using CmsApi.DTOs.CmsLoginDtos;
 using CmsApi.DTOs.HttpApiDtos;
-using CmsApi.DTOs.LoginDtos;
-using CmsApi.Entities;
+using CmsApi.Entities.CmsApi.Entities;
 
 namespace CmsApi.Http.Handlers.Interfaces
 {

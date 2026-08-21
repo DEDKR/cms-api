@@ -49,7 +49,7 @@ namespace CmsApi.Repositories.Implementations
             if (!await reader.ReadAsync())
                 return null;
 
-            return new NotificationDetailDto
+            var result = new NotificationDetailDto
             {
                 Id = reader.SafeGet<long>("ID"),
                 Ids = reader.SafeGet<string>("IDS"),
@@ -61,6 +61,23 @@ namespace CmsApi.Repositories.Implementations
                 Content = reader.SafeGet<string>("CONTENT"),
                 Status = reader.SafeGet<string>("STATUS")
             };
+
+            if (await reader.NextResultAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    result.RelatedNotifications.Add(new RelatedNotificationDto
+                    {
+                        Id = reader.SafeGet<long>("ID"),
+                        CaseId = reader.SafeGet<long>("CASE_ID"),
+                        CaseNo = reader.SafeGet<string>("CASE_NO"),
+                        InsertDate = reader.SafeGet<DateTime>("INSERT_DATE"),
+                        Status = reader.SafeGet<int>("STATUS")
+                    });
+                }
+            }
+
+            return result;
         }
 
         public async Task<PagedResult<NotificationListItemDto>> GetNotifications(NoitifcationRequestDto request)
@@ -106,6 +123,33 @@ namespace CmsApi.Repositories.Implementations
 
             result.PageNumber = request.PageIndex;
             result.PageSize = request.PageSize;
+
+            return result;
+        }
+
+        public async Task<NotificationStatisticDto> GetNotificationStatistics(
+             NotificationStatisticRequestDto request)
+        {
+            var result = new NotificationStatisticDto();
+
+            await using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+
+            await using var cmd = new SqlCommand("dbo.P_GET_NOTIFICATION_STATISTICS", connection);
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            cmd.Parameters.AddWithValue("@InsertDate", (object?)request.InsertDate ?? DBNull.Value);
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                result.Total = reader.SafeGet<int>("TOTAL");
+                result.ReadCount = reader.SafeGet<int>("READ_COUNT");
+                result.UnreadCount = reader.SafeGet<int>("UNREAD_COUNT");
+                result.LastInsertDate = reader.SafeGet<DateTime?>("LAST_INSERT_DATE");
+                result.InsertDateCount = reader.SafeGet<int>("INSERT_DATE_COUNT");
+            }
 
             return result;
         }

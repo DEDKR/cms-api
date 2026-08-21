@@ -4,11 +4,10 @@
     {
         public string? CaseNo { get; set; }
 
-        public int? CaseTypeId { get; set; }
-
         public int? CourtId { get; set; }
 
-        public int? JudgeId { get; set; }
+        public List<int>? JudgeIds { get; set; }
+        public List<int>? CaseTypeIds { get; set; }
 
         public int? CaseStatus { get; set; }
 
@@ -19,5 +18,8 @@
         public int PageNumber { get; set; } = 1;
 
         public int PageSize { get; set; } = 10;
+
+        public int AnalizeStatus {  get; set; }
+        public bool? OnlyWarningsCases { get; set; }
     }
 }

@@ -2,6 +2,7 @@
 using CmsApi.DTOs.ApiDtos;
 using CmsApi.Enums;
 using CmsApi.Repositories.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,6 +10,8 @@ namespace CmsApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
+
     public class ReferenceDataController : ControllerBase
     {
         private readonly IReferenceDataRepository _referenceDataRepository;
@@ -30,10 +33,10 @@ namespace CmsApi.Controllers
                 parametr);
 
         [HttpGet("case-types")]
-        public async Task<IActionResult> GetCaseTypes([FromQuery] int courtId, string? parametr)
+        public async Task<IActionResult> GetCaseTypes([FromQuery]  string? parametr)
             => await HandleReferenceDataAsync(
                 ReferenceDataType.CaseTypes,
-                courtId,
+                null,
                 parametr);
 
 
@@ -57,6 +60,13 @@ namespace CmsApi.Controllers
         ReferenceDataType.MeetingStatuses,
            null,
         parametr);
+
+
+        [HttpGet("court-types")]
+        public async Task<IActionResult> GetCourtTypes()
+         => await HandleReferenceDataAsync(
+             ReferenceDataType.CourtTypes
+         );
 
         private async Task<IActionResult> HandleReferenceDataAsync(
          ReferenceDataType type,

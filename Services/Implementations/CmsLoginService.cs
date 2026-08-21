@@ -1,6 +1,7 @@
 ﻿using CmsApi.Common;
-using CmsApi.DTOs.LoginDtos;
+using CmsApi.DTOs.CmsLoginDtos;
 using CmsApi.Entities;
+using CmsApi.Entities.CmsApi.Entities;
 using CmsApi.Http.Handlers.Interfaces;
 using CmsApi.Services.Interfaces;
 using Microsoft.Extensions.Options;

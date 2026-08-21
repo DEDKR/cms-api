@@ -2,6 +2,7 @@
 {
     public class CaseDocuments
     {
+        public long Id { get; set; }
         public long CaseId { get; set; }
         public string? CaseIds { get; set; }
 
@@ -11,6 +12,7 @@
         public string? Status { get; set; }
         public DateTime InsertDate { get; set; }
         public CaseDocAttachment? Attachment { get; set; }
+        public bool? IsImportant { get; set; }
     }
 
 

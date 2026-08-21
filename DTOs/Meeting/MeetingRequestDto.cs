@@ -2,6 +2,8 @@
 {
     public class MeetingRequestDto
     {
+        public string? CaseNo { get; set; }
+
         public int? CourtId { get; set; }
         public int? Status { get; set; }
 

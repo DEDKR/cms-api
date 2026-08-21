@@ -8,6 +8,7 @@ using CmsApi.Repositories.Implementations;
 using CmsApi.Repositories.Interfaces;
 using CmsApi.Services.Implementations;
 using CmsApi.Services.Interfaces;
+using CmsApi.Services.Interfaces.CmsApi.Services.Interfaces;
 using Microsoft.Data.SqlClient;
 using System;
 using System.Data;
@@ -32,6 +33,15 @@ namespace CmsApi
             builder.Services.AddHttpClient<ICmsHttpHandler, CmsHttpHandler>();
             builder.Services.AddScoped<IMeetingRepository, MeetingRepository>();
             builder.Services.AddScoped<IDocumentService, DocumentService>();
+            builder.Services.AddScoped<ICaseService, CaseService>();
+            builder.Services.AddScoped<IDashboardService, DashboardService>();
+            builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<ITokenRepository, TokenRepository>();
+            builder.Services.AddScoped<IPasswordService, PasswordService>();
+            builder.Services.AddScoped<ITokenService, TokenService>();
+
+            builder.Services.AddAuthenticationServices(builder.Configuration);
 
 
 
@@ -43,6 +53,7 @@ namespace CmsApi
 
 
             builder.Services.AddCorsServices(builder.Configuration);
+            builder.Services.AddSwaggerServices();
 
             // Add services to the container.
             builder.Services.AddScoped<IDbConnection>(sp =>
@@ -60,8 +71,8 @@ namespace CmsApi
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
-
 
             app.MapControllers();
 

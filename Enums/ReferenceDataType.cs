@@ -7,6 +7,7 @@
         MeetingStatuses,
         Courts,
         Judges,
-        MeetTypes
+        MeetTypes,
+        CourtTypes
     }
 }

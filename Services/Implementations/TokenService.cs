@@ -5,15 +5,16 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace CmsApi.Services.Implementations
 {
-    public class JwtTokenService : ITokenService
+    public class TokenService : ITokenService
     {
         private readonly JwtSettings _jwtSettings;
 
-        public JwtTokenService(IOptions<JwtSettings> options)
+        public TokenService(IOptions<JwtSettings> options)
         {
             _jwtSettings = options.Value;
         }
@@ -22,46 +23,67 @@ namespace CmsApi.Services.Implementations
         {
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
-                new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-                new  Claim("role", user.RoleName.Trim())
+                new(
+                    JwtRegisteredClaimNames.Sub,
+                    user.UserId.ToString()),
+
+                new(
+                    JwtRegisteredClaimNames.UniqueName,
+                    user.Username ?? string.Empty),
+
+                new(
+                    ClaimTypes.NameIdentifier,
+                    user.UserId.ToString()),
+
+                new(
+                    ClaimTypes.Role,
+                    user.Role?.Trim() ?? string.Empty)
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
+
+            var credentials = new SigningCredentials(
+                key,
+                SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
                 issuer: _jwtSettings.Issuer,
                 audience: _jwtSettings.Audience,
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(_jwtSettings.ExpiryMinutes),
-                signingCredentials: creds
+                expires: GetAccessTokenExpiration(),
+                signingCredentials: credentials
             );
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return new JwtSecurityTokenHandler()
+                .WriteToken(token);
         }
 
-        public string GenerateRefreshToken(User user)
+        public string GenerateRefreshToken()
         {
-            var claims = new List<Claim>
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
-                new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-                new  Claim("role", user.RoleName.Trim())
-            };
+            var bytes = RandomNumberGenerator.GetBytes(64);
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            return Convert.ToBase64String(bytes);
+        }
 
-            var token = new JwtSecurityToken(
-                issuer: _jwtSettings.Issuer,
-                audience: _jwtSettings.Audience,
-                claims: claims,
-                expires: DateTime.Now.AddDays(_jwtSettings.RefreshTokenExpiryDay),
-                signingCredentials: creds
-            );
+        public string HashRefreshToken(string refreshToken)
+        {
+            var bytes = SHA256.HashData(
+                Encoding.UTF8.GetBytes(refreshToken));
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return Convert.ToHexString(bytes);
+        }
+
+        public DateTime GetAccessTokenExpiration()
+        {
+            return DateTime.UtcNow.AddMinutes(
+                _jwtSettings.ExpiryMinutes);
+        }
+
+        public DateTime GetRefreshTokenExpiration()
+        {
+            return DateTime.UtcNow.AddDays(
+                _jwtSettings.RefreshTokenExpiryDay);
         }
     }
 }

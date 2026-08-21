@@ -10,7 +10,9 @@ namespace CmsApi.Services.Interfaces
 
         Task<int> MakeReadNotification(long id);
 
-        Task<int> GetNewNotificationsCount(); 
+        Task<int> GetNewNotificationsCount();
+
+        Task<NotificationStatisticDto> GetNotificationStatistics(NotificationStatisticRequestDto notificationStatisticRequestDto);
 
     }
 }

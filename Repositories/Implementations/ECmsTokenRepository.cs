@@ -1,5 +1,6 @@
 ﻿using CmsApi.DB;
 using CmsApi.Entities;
+using CmsApi.Entities.CmsApi.Entities;
 using CmsApi.ExtensionMethods;
 using CmsApi.Repositories.Interfaces;
 using Microsoft.Data.SqlClient;

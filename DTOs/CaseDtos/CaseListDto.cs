@@ -29,5 +29,7 @@
         public int? CourtLevelId { get; set; }
         public string? CourtLevelName { get; set; }
 
+        public bool? IsAnalizeSuccess { get; set; }
+
     }
 }

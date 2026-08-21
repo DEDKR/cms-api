@@ -1,4 +1,5 @@
 ﻿using CmsApi.Entities;
+using CmsApi.Entities.CmsApi.Entities;
 
 namespace CmsApi.Helpers
 {

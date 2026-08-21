@@ -80,7 +80,7 @@ namespace CmsApi.Repositories.Implementations
             using var connection = _connectionFactory.CreateMsSqlConnection();
             await connection.OpenAsync();
 
-            using var command = new SqlCommand("SP_GET_MEETING_DETAIL", connection);
+            using var command = new SqlCommand("P_GET_MEETING_DETAIL", connection);
             command.CommandType = CommandType.StoredProcedure;
             command.Parameters.AddWithValue("@MEETING_ID", meetingId);
 

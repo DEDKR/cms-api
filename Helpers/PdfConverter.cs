@@ -5,6 +5,7 @@ using iTextSharp.text.pdf;
 using SkiaSharp;
 using Svg.Skia;
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -257,25 +258,70 @@ namespace CmsApi.Helpers
         // ========== DOCX -> PDF ==========
         public static byte[] DocxToPdf(byte[] docxBytes)
         {
-            using (var docxStream = new MemoryStream(docxBytes))
-            using (var wordDoc = WordprocessingDocument.Open(docxStream, false))
+            var tempDirectory = Path.Combine(
+                Path.GetTempPath(),
+                Guid.NewGuid().ToString());
+
+            Directory.CreateDirectory(tempDirectory);
+
+            var docxPath = Path.Combine(tempDirectory, "document.docx");
+            var pdfPath = Path.Combine(tempDirectory, "document.pdf");
+
+            try
             {
-                var body = wordDoc.MainDocumentPart.Document.Body;
-                string text = string.Join("\n",
-                    body.Descendants<DocumentFormat.OpenXml.Wordprocessing.Paragraph>()
-                        .Select(p => p.InnerText));
+                File.WriteAllBytes(docxPath, docxBytes);
 
-                using (var ms = new MemoryStream())
+                var sofficePath =
+                  @"C:\Program Files\LibreOffice\program\soffice.com";
+
+                if (!File.Exists(sofficePath))
+                    throw new FileNotFoundException(
+                        "LibreOffice tapılmadı.",
+                        sofficePath);
+
+                var processInfo = new ProcessStartInfo
                 {
-                    var document = new iTextSharp.text.Document();
-                    iTextSharp.text.pdf.PdfWriter.GetInstance(document, ms);
-                    document.Open();
+                    FileName = sofficePath,
+                    Arguments =
+                        $"--headless " +
+                        $"--convert-to pdf " +
+                        $"--outdir \"{tempDirectory}\" " +
+                        $"\"{docxPath}\"",
 
-                    var paragraph = new iTextSharp.text.Paragraph(text);
-                    document.Add(paragraph);
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
 
-                    document.Close();
-                    return ms.ToArray();
+                using var process = Process.Start(processInfo);
+
+                if (process == null)
+                    throw new InvalidOperationException(
+                        "LibreOffice process başlatıla bilmədi.");
+
+                process.WaitForExit();
+
+                if (process.ExitCode != 0 || !File.Exists(pdfPath))
+                {
+                    var error = process.StandardError.ReadToEnd();
+
+                    throw new InvalidOperationException(
+                        $"DOCX PDF-ə çevrilmədi. {error}");
+                }
+
+                return File.ReadAllBytes(pdfPath);
+            }
+            finally
+            {
+                try
+                {
+                    if (Directory.Exists(tempDirectory))
+                        Directory.Delete(tempDirectory, true);
+                }
+                catch
+                {
+                    // cleanup failure ignored
                 }
             }
         }

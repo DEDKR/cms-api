@@ -2,6 +2,7 @@
 {
     public class CaseDetailViewDto
     {
+        public long CaseId { get; set; }
         public string? Ids { get; set; }
 
         public string? CaseNo { get; set; }
@@ -21,9 +22,17 @@
 
         public int? Year { get; set; }
 
-
         public int? CategoryId { get; set; }
 
         public int? SubCategoryId { get; set; }
+
+        public int? CourtLevelId { get; set; }
+        public string? CourtLevelName { get; set; }
+
+        public string? TerritorialOffice { get; set; }
+
+        public string? CaseSubject { get; set; }
+
+        public string? Result { get; set; }
     }
 }

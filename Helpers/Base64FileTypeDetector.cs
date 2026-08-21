@@ -61,7 +61,7 @@ namespace CmsApi.Helpers
 
             // DOCX / XLSX / PPTX (ZIP container)
             if (Match(fileBytes, 0x50, 0x4B, 0x03, 0x04))
-                return "application/zip"; // deeper inspection lazımdır
+                return DetectZipBasedOfficeFile(fileBytes); // deeper inspection lazımdır
 
             // TEXT
             if (IsText(fileBytes)) return "text/plain";
@@ -82,7 +82,6 @@ namespace CmsApi.Helpers
             if (Match(fileBytes, 0x52, 0x61, 0x72, 0x21)) return "application/x-rar-compressed";
             if (Match(fileBytes, 0x1F, 0x8B)) return "application/gzip";
             if (Match(fileBytes, 0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C)) return "application/x-7z-compressed";
-            if (Match(fileBytes, 0x50, 0x4B, 0x03, 0x04)) return "application/zip";
             if (Match(fileBytes, 0x75, 0x73, 0x74, 0x61, 0x72)) return "application/x-tar";
 
             // JSON / XML / HTML
@@ -116,6 +115,38 @@ namespace CmsApi.Helpers
         {
             return bytes.Take(512).All(b =>
                 b == 9 || b == 10 || b == 13 || (b >= 32 && b <= 126));
+        }
+
+        private static string DetectZipBasedOfficeFile(byte[] fileBytes)
+        {
+            try
+            {
+                using var stream = new MemoryStream(fileBytes);
+                using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
+
+                var entries = archive.Entries
+                    .Select(x => x.FullName.Replace('\\', '/'))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                // DOCX
+                if (entries.Contains("word/document.xml"))
+                    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+                // XLSX
+                if (entries.Contains("xl/workbook.xml"))
+                    return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+                // PPTX
+                if (entries.Contains("ppt/presentation.xml"))
+                    return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+
+                // Sadə ZIP
+                return "application/zip";
+            }
+            catch
+            {
+                return "application/zip";
+            }
         }
     }
 }
