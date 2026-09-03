@@ -8,6 +8,8 @@
         FinalCourtActNotUploaded = 4,
         NoAnalyzableTextFound = 5,
         NoSuitableDocumentsForAnalysisFound = 6,
-        DocumentCouldNotBeRetrievedFromSource = 7
+        DocumentCouldNotBeRetrievedFromSource = 7,
+        DocumentsSizeExceeded = 8
+
     }
 }

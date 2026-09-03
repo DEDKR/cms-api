@@ -8,6 +8,8 @@
         Courts,
         Judges,
         MeetTypes,
-        CourtTypes
+        CourtTypes,
+        RealEstateTypes,
+        RegionalOffices
     }
 }

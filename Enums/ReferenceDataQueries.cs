@@ -10,7 +10,10 @@
         { ReferenceDataType.MeetingStatuses, "P_GET_MEETING_STATUSES" },
         { ReferenceDataType.Courts, "P_GET_COURTS" },
         { ReferenceDataType.Judges, "P_GET_JUDGES" },
-        { ReferenceDataType.CourtTypes, "P_GET_COURT_TYPES" }
+        { ReferenceDataType.CourtTypes, "P_GET_COURT_TYPES" },
+        { ReferenceDataType.RealEstateTypes, "P_GET_REAL_ESTATE_TYPES" },
+        { ReferenceDataType.RegionalOffices, "P_GET_REGIONAL_OFFICES" },
+
     };
 
         public static readonly Dictionary<ReferenceDataType, string> SuccessMessages = new()

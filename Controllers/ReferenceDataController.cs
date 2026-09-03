@@ -68,6 +68,18 @@ namespace CmsApi.Controllers
              ReferenceDataType.CourtTypes
          );
 
+        [HttpGet("regional-offices")]
+        public async Task<IActionResult> GetRegionalOffices()
+        => await HandleReferenceDataAsync(
+            ReferenceDataType.RegionalOffices
+        );
+
+        [HttpGet("real-estate-types")]
+        public async Task<IActionResult> GetRealEstateTypes()
+        => await HandleReferenceDataAsync(
+            ReferenceDataType.RealEstateTypes
+        );
+
         private async Task<IActionResult> HandleReferenceDataAsync(
          ReferenceDataType type,
          int? courtId = null,

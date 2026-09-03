@@ -30,7 +30,7 @@ namespace CmsApi.Services.Implementations
 
             var result = await _cmsHttpHandler.GetDocumentAsBase64Async(attachmentId);
 
-            if(result.Result.Content == null)
+            if (result == null || result.Result?.Content == null)
             {
                 return null;
             }

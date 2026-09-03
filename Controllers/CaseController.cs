@@ -278,15 +278,17 @@ namespace CmsApi.Controllers
             return File(result, "application/pdf", "document.pdf");
         }
 
-        //[HttpGet("analize-case")]
-        //[AllowAnonymous]
 
-        //public async Task<IActionResult> AnalizeCase([FromQuery] long caseId)
-        //{
-        //    await _caseService.AnalizeCase(caseId);
 
-        //    return Ok(ApiResponse<object>.Ok("ok"));
+        [HttpGet("analize-case")]
+        [AllowAnonymous]
 
-        //}
+        public async Task<IActionResult> AnalizeCase([FromQuery] long caseId)
+        {
+            await _caseService.AnalizeCase(caseId);
+
+            return Ok(ApiResponse<object>.Ok("ok"));
+
+        }
     }
 }

@@ -90,6 +90,8 @@ namespace CmsApi.Services.Implementations
                             _ => 4
                         });
 
+                    var docSizeCheckCount = 0;
+
                     foreach (var item in orderedDocuments)
                     {
                         var document = await _documentService.GetDocument(item.Attachment.Ids);
@@ -115,6 +117,28 @@ namespace CmsApi.Services.Implementations
 
                         long fileSizeInBytes = document.Length;
                         double fileSizeInMb = fileSizeInBytes / 1024.0 / 1024.0;
+
+                        if (fileSizeInMb > 5)
+                        {
+
+                            docSizeCheckCount = docSizeCheckCount + 1;
+
+                            continue;
+                        }
+
+                        if (docSizeCheckCount == orderedDocuments.Count())
+                        {
+                            var analizeRes = new CaseAnalysisFindingDto
+                            {
+                                CaseId = caseItem.Id,
+                                IsResolved = false,
+                                Type = 2,
+                                WarningMessageId = (int)CaseAnalysisWarningType.DocumentsSizeExceeded
+                            };
+
+                            await _caseRepository.InsertCaseAnalysisFindingAsync(analizeRes);
+                        }
+
 
                         var sened = _documentService.ExtractText(document);
 
@@ -389,7 +413,7 @@ namespace CmsApi.Services.Implementations
 
                         await _caseRepository.InsertCaseDocumentRawContentAsync(docde);
                     }
-                    if(string.IsNullOrEmpty(content) && isDocNull == false)
+                    if (string.IsNullOrEmpty(content) && isDocNull == false)
                     {
                         var analizeRes = new CaseAnalysisFindingDto
                         {
@@ -485,7 +509,7 @@ namespace CmsApi.Services.Implementations
             return string.Join(" ", words);
         }
 
-       
+
 
 
     }
