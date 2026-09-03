@@ -23,8 +23,7 @@ namespace CmsApi.Repositories.Interfaces
 
         Task<CaseOrBaseCaseGetDto> GetCaseOrStarterCaseAsync(long caseId);
 
-        Task<long> InsertCaseDocumentRawContentAsync(
-    InsertCaseDocumentRawContentRequestDto request);
+        Task<long> InsertCaseDocumentRawContentAsync(InsertCaseDocumentRawContentRequestDto request);
 
         Task<List<CaseForAnalizeDto>> CaseForAnalizesAsync();
 

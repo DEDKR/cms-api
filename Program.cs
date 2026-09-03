@@ -41,6 +41,10 @@ namespace CmsApi
             builder.Services.AddScoped<IPasswordService, PasswordService>();
             builder.Services.AddScoped<ITokenService, TokenService>();
 
+            // register Complaint service and repository
+            builder.Services.AddScoped<IComplaintService, ComplaintService>();
+            builder.Services.AddScoped<IComplaintRepository, ComplaintRepository>();
+
             builder.Services.AddAuthenticationServices(builder.Configuration);
 
 
