@@ -17,5 +17,10 @@ namespace CmsApi.Services.Implementations
         {
             return await _complaintRepository.GetComplaintsAsync(request);
         }
+
+        public async Task<ComplaintDetailsDto?> GetComplaintDetailsAsync(long complaintId)
+        {
+            return await _complaintRepository.GetComplaintDetailsAsync(complaintId);
+        }
     }
 }

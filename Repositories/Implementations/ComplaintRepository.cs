@@ -72,7 +72,198 @@ namespace CmsApi.Repositories.Implementations
             }
             catch (Exception ex)
             {
+                throw;
+            }
+        }
+        
 
+        public async Task<ComplaintDetailsDto?> GetComplaintDetailsAsync(long complaintId) {
+            try
+            {
+                var result = new ComplaintDetailsDto();
+
+                using var connection = _connectionFactory.CreateMsSqlConnection();
+                await connection.OpenAsync();
+
+                using var cmd = new SqlCommand("P_GET_COMPLAINTS", connection)
+                {
+                    CommandType = CommandType.StoredProcedure,
+                    CommandTimeout = 30
+                };
+
+                cmd.Parameters.Add("@ID", SqlDbType.BigInt).Value = complaintId;
+
+                using var reader = await cmd.ExecuteReaderAsync();
+
+
+                // 1st Table
+
+                if (await reader.ReadAsync())
+                {
+                    result.CaseView = new ComplaintCaseViewDto
+                    {
+                        Id = reader.SafeGet<long>("ID"),
+                        ApplicationHeader = reader.SafeGet<string>("APPLICATION_HEADER"),
+                        IdView = reader.SafeGet<string>("ID_VIEW"),
+                        CaseNo = reader.SafeGet<string>("CASE_NO"),
+                        CourtName = reader.SafeGet<string>("COURT_NAME"),
+                        DocNo = reader.SafeGet<string>("DOC_NO"),
+                        DecisionTypeName = reader.SafeGet<string>("DECISION_TYPE_NAME"),
+                        DecisionDate = reader.SafeGet<DateTime?>("DECISION_DATE"),
+                        InsertDate = reader.SafeGet<DateTime?>("INSERT_DATE"),
+                        SendDate = reader.SafeGet<DateTime?>("SEND_DATE"),
+                        StateName = reader.SafeGet<string>("STATE_NAME")
+                    };
+                }
+
+
+                // 2nd Table
+
+                await reader.NextResultAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    result.Parties.Add(new ComplaintPartiesDto
+                    {
+                        Id = reader.SafeGet<long>("ID"),
+                        PartyTypeName = reader.SafeGet<string>("PARTY_TYPE_NAME"),
+                        LegalPerson = reader.SafeGet<string>("LEGAL_FULL_NAME") != null ? new ComplaintLegalPersonDto
+                        {
+                            Id = reader.SafeGet<long>("LEGAL_PERSON_ID"),
+                            FullName = reader.SafeGet<string>("LEGAL_FULL_NAME"),
+                            Voen = reader.SafeGet<string>("VOEN"),
+                            Email = reader.SafeGet<string>("LEGAL_EMAIL"),
+                            Phone = reader.SafeGet<string>("LEGAL_PHONE")
+                        } : null,
+                        PhysicalPerson = reader.SafeGet<string>("PHYSICAL_NAME") != null ? new ComplaintPhysicalPersonDto
+                        {
+                            Id = reader.SafeGet<long>("PHYSICAL_PERSON_ID"),
+                            Name = reader.SafeGet<string>("PHYSICAL_NAME"),
+                            SurName = reader.SafeGet<string>("PHYSICAL_SURNAME"),
+                            LastName = reader.SafeGet<string>("PHYSICAL_LAST_NAME"),
+                            DocSerial = reader.SafeGet<string>("DOC_SERIAL"),
+                            DocNumber = reader.SafeGet<string>("DOC_NUMBER"),
+                            Email = reader.SafeGet<string>("PHYSICAL_EMAIL"),
+                            Phone = reader.SafeGet<string>("PHYSICAL_PHONE")
+                        } : null
+                    });
+                }
+
+
+                // 3rd Table
+
+                await reader.NextResultAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    result.Documents.Add(new ComplaintDocumentsDto
+                    {
+                        Id = reader.SafeGet<long>("ATT_ID"),
+                        OtherDocsTypeName = reader.SafeGet<string>("OTHER_DOC_TYPE_NAME"),
+                        FileName = reader.SafeGet<string>("FILE_NAME")
+                    });
+                }
+
+
+                // 4th Table
+
+                await reader.NextResultAsync();
+
+
+                if (await reader.ReadAsync())
+                {
+                    result.DecisionInfo = new ComplaintDecisionInfoDto
+                    {
+                        Id = reader.SafeGet<long>("ID"),
+                        Court = reader.SafeGet<string>("COURT"),
+                        DocNo = reader.SafeGet<string>("DOC_NO"),
+                        DecisionDate = reader.SafeGet<DateTime?>("DECISION_DATE"),
+                        Name = reader.SafeGet<string>("NAME")
+                    };
+                }
+
+
+                // 5th Table
+
+                await reader.NextResultAsync();
+
+
+                if (await reader.ReadAsync())
+                {
+                    result.FreePaidReason = new ComplaintFreePaidReasonDto
+                    {
+                        Id = reader.SafeGet<long>("ID"),
+                        ReasonName = reader.SafeGet<string>("REASON_NAME")
+                    };
+                }
+
+
+                // 6th Table
+
+                await reader.NextResultAsync();
+
+
+                if (await reader.ReadAsync())
+                {
+                    result.ApplicationContext = new ComplaintApplicationContextDto
+                    {
+                        Id = reader.SafeGet<long>("ID"),
+                        Header = reader.SafeGet<string>("HEADER"),
+                        Body = reader.SafeGet<string>("BODY")
+                    };
+                }
+
+
+                // 7th Table
+
+                await reader.NextResultAsync();
+
+
+                while (await reader.ReadAsync())
+                {
+                    result.Signers.Add(new ComplaintSignerDto
+                    {
+                        Id = reader.SafeGet<long>("ID"),
+                        PartyTypeName = reader.SafeGet<string>("PARTY_TYPE_NAME"),
+                        FullName = reader.SafeGet<string>("FULL_NAME")
+                    });
+                }
+
+
+                // 8th Table
+
+                await reader.NextResultAsync();
+
+
+                while (await reader.ReadAsync())
+                {
+                    result.LegalNorms.Add(new ComplaintLegalNorms
+                    {
+                        Id = reader.SafeGet<long>("ID"),
+                        Norm = reader.SafeGet<string>("NORM"),
+                        Name = reader.SafeGet<string>("NAME")
+                    });
+                }
+
+
+                // 9th Table
+
+                await reader.NextResultAsync();
+
+
+                while (await reader.ReadAsync())
+                {
+                    result.ApplicationDetails.Add(new ComplaintApplicationDetails
+                    {
+                        Id = reader.SafeGet<long>("ID"),
+                        Name = reader.SafeGet<string>("NAME")
+                    });
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
                 throw;
             }
         }

@@ -3,6 +3,7 @@ using CmsApi.DTOs.ComplaintDtos;
 using CmsApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace CmsApi.Controllers
 {
@@ -24,6 +25,14 @@ namespace CmsApi.Controllers
             var complaints = await _complaintService.GetComplaintsAsync(request);
 
             return Ok(ApiResponse<PagedResult<ComplaintListDto?>>.Ok(complaints));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetComplaint([FromQuery, Required] long complaintId)
+        {
+            var complaint = await _complaintService.GetComplaintDetailsAsync(complaintId);
+
+            return Ok(ApiResponse<ComplaintDetailsDto?>.Ok(complaint));
         }
     }
 }
