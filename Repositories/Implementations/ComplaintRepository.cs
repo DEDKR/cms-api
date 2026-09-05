@@ -1,6 +1,5 @@
 ﻿using CmsApi.DB;
 using CmsApi.DTOs.ApiDtos;
-using CmsApi.DTOs.CaseDtos;
 using CmsApi.DTOs.ComplaintDtos;
 using CmsApi.ExtensionMethods;
 using CmsApi.Repositories.Interfaces;
