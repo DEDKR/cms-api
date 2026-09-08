@@ -160,6 +160,64 @@ namespace CmsApi.Repositories.Implementations
             return result;
         }
 
-       
+
+        public async Task<MeetingStatisticDto?> MeetingStatisticAsync()
+        {
+            using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+
+            var result = new MeetingStatisticDto();
+
+            // Birinci resultset
+            using var cmd = new SqlCommand("P_GET_MEET_STATISTICS", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                result.TotalMeetings = reader.SafeGet<long>("TotalMeetings");
+                result.CompletedMeetings = reader.SafeGet<long>("CompletedMeetings");
+                result.InProgressMeetings = reader.SafeGet<long>("InProgressMeetings");
+                result.NewMeetingsThisMonth = reader.SafeGet<long>("NewMeetingsThisMonth");
+            }
+
+            // İkinci resultset
+            if (await reader.NextResultAsync())
+            {
+                var years = new Dictionary<int, MeetingYearDto>();
+
+                while (await reader.ReadAsync())
+                {
+                    var year = reader.SafeGet<int>("YEAR");
+
+                    if (!years.TryGetValue(year, out var yearDto))
+                    {
+                        yearDto = new MeetingYearDto
+                        {
+                            Year = year,
+                            TotalCount = reader.SafeGet<int>("YEAR_COUNT"),
+                            Months = new List<MeetingMonthDto>()
+                        };
+
+                        years.Add(year, yearDto);
+                    }
+
+                    yearDto.Months!.Add(new MeetingMonthDto
+                    {
+                        Month = reader.SafeGet<string>("MONTH"),
+                        Count = reader.SafeGet<int>("MONTH_COUNT")
+                    });
+                }
+
+                result.Years = years.Values.ToList();
+            }
+
+            return result;
+        }
+
+
     }
 }

@@ -39,6 +39,7 @@ namespace CmsApi.Repositories.Implementations
                 };
 
                 cmd.Parameters.Add("@ID_VIEW", SqlDbType.NVarChar, 50).Value = (object?)payload.IdView ?? DBNull.Value;
+                cmd.Parameters.Add("@VOEN", SqlDbType.NVarChar, 100).Value = (object?)payload.Voen ?? DBNull.Value;
                 cmd.Parameters.Add("@START_DATE", SqlDbType.Date).Value = (object?)payload.StartDate ?? DBNull.Value;
                 cmd.Parameters.Add("@END_DATE", SqlDbType.Date).Value = (object?)payload.EndDate ?? DBNull.Value;
                 cmd.Parameters.Add("@STATE_ID", SqlDbType.Int).Value = (object?)payload.StateId ?? DBNull.Value;
@@ -91,7 +92,7 @@ namespace CmsApi.Repositories.Implementations
                 var result = new PretenseDetailsDto();
                 using var connection = _connectionFactory.CreateMsSqlConnection();
                 await connection.OpenAsync();
-                using var cmd = new SqlCommand("P_GET_PRETENSES", connection)
+                using var cmd = new SqlCommand("P_GET_PRETENSE_DETAILS", connection)
                 {
                     CommandType = CommandType.StoredProcedure,
                     CommandTimeout = 30
@@ -201,5 +202,67 @@ namespace CmsApi.Repositories.Implementations
                 throw;
             }
         }
+
+
+        public async Task<PretenseStatisticDto?> GetPretenseStatisticsAsync()
+        {
+            using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+
+            var result = new PretenseStatisticDto();
+
+            // Birinci resultset
+            using var cmd = new SqlCommand("P_GET_PRETENSE_STATISTICS", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                result.TotalPretenses = reader.SafeGet<long>("TotalPretenses");
+                result.CompletedPretenses = reader.SafeGet<long>("CompletedPretenses");
+                result.InProgressPretenses = reader.SafeGet<long>("InProgressPretenses");
+                result.NewPretensesThisMonth = reader.SafeGet<long>("NewPretensesThisMonth");
+            }
+
+            // İkinci resultset
+            if (await reader.NextResultAsync())
+            {
+                var years = new Dictionary<int, PretenseYearDto>();
+
+                while (await reader.ReadAsync())
+                {
+                    var year = reader.SafeGet<int>("YEAR");
+
+                    if (!years.TryGetValue(year, out var yearDto))
+                    {
+                        yearDto = new PretenseYearDto
+                        {
+                            Year = year,
+                            TotalCount = reader.SafeGet<int>("YEAR_COUNT"),
+                            Months = new List<PretenseMonthDto>()
+                        };
+
+                        years.Add(year, yearDto);
+                    }
+
+                    yearDto.Months!.Add(new PretenseMonthDto
+                    {
+                        Month = reader.SafeGet<string>("MONTH"),
+                        Count = reader.SafeGet<int>("MONTH_COUNT")
+                    });
+                }
+
+                result.Years = years.Values.ToList();
+            }
+
+            return result;
+        }
+
+
+
+
     }
 }

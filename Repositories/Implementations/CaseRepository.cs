@@ -2,6 +2,7 @@
 using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.CaseDtos;
 using CmsApi.DTOs.Dashboard;
+using CmsApi.DTOs.Meeting;
 using CmsApi.Entities;
 using CmsApi.Enums;
 using CmsApi.ExtensionMethods;
@@ -505,6 +506,8 @@ namespace CmsApi.Repositories.Implementations
 
             return result;
         }
+
+ 
 
         public async Task<List<CaseDocuments>> CaseDocumentsAsync(long caseId)
         {

@@ -6,8 +6,14 @@
 
         public int? CourtId { get; set; }
         public int? ApplicationTypeId { get; set; }
+        public string? IdView { get; set; }
+        public string? Voen { get; set; }
+        public string? DocNumber { get; set; }
+        public string? PhysicalName { get; set; }
+        public string? PhysicalSurname { get; set; }
+        public string? PhysicalLastName { get; set; }
 
-        public int? CaseStatus { get; set; }
+        public int? StateId { get; set; }
 
         public DateTime? StartDate { get; set; }
 

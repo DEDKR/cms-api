@@ -1,5 +1,6 @@
 ﻿using CmsApi.Common;
 using CmsApi.DTOs.ApiDtos;
+using CmsApi.DTOs.BorderDtos;
 using CmsApi.DTOs.DocumentDtos;
 using CmsApi.DTOs.HttpApiDtos;
 using CmsApi.Helpers;
@@ -198,6 +199,94 @@ namespace CmsApi.Http.Handlers.Implementations
             }
         }
 
-        
+
+        public async Task<JsonElement?> GetBordersAsync()
+        {
+            try
+            {
+                // 1. Get token
+                var tokenRequest = new
+                {
+                    client_id = _apiSettings.BorderClientId,
+                    client_secret = _apiSettings.BorderClientSecret
+                };
+
+                var tokenJson = JsonSerializer.Serialize(tokenRequest);
+
+                using var tokenContent = new StringContent(
+                    tokenJson,
+                    Encoding.UTF8,
+                    "application/json");
+
+                var tokenResponse = await _httpClient.PostAsync(
+                    _apiSettings.BorderTokenApi,
+                    tokenContent);
+
+                var tokenResponseJson =
+                    await tokenResponse.Content.ReadAsStringAsync();
+
+                if (!tokenResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogError(
+                        "Token request failed. Status: {Status}, Response: {Response}",
+                        tokenResponse.StatusCode,
+                        tokenResponseJson);
+
+                    return null;
+                }
+
+                var token = JsonSerializer.Deserialize<BorderTokenResponseDto>(
+                    tokenResponseJson);
+
+                if (token is null ||
+                    string.IsNullOrWhiteSpace(token.AccessToken))
+                {
+                    _logger.LogError("Access token alınmadı.");
+                    return null;
+                }
+
+                // 2. Get coords
+                using var request = new HttpRequestMessage(
+                    HttpMethod.Get,
+                    _apiSettings.BordersApi);
+
+                request.Headers.Authorization =
+                    new AuthenticationHeaderValue(
+                        "Bearer",
+                        token.AccessToken);
+
+                var bordersResponse =
+                    await _httpClient.SendAsync(request);
+
+                var bordersJson =
+                    await bordersResponse.Content.ReadAsStringAsync();
+
+                if (!bordersResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogError(
+                        "Borders request failed. Status: {Status}, Response: {Response}",
+                        bordersResponse.StatusCode,
+                        bordersJson);
+
+                    return null;
+                }
+
+                // 3. Do not create a strict DTO for coordinates
+                using var document =
+                    JsonDocument.Parse(bordersJson);
+
+                return document.RootElement.Clone();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error while getting borders");
+
+                return null;
+            }
+        }
+
+
     }
 }

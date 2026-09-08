@@ -1,6 +1,7 @@
 ﻿using CmsApi.DB;
 using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.ComplaintDtos;
+using CmsApi.DTOs.Meeting;
 using CmsApi.ExtensionMethods;
 using CmsApi.Repositories.Interfaces;
 using Microsoft.Data.SqlClient;
@@ -40,7 +41,13 @@ namespace CmsApi.Repositories.Implementations
                 cmd.Parameters.Add("@END_DATE", SqlDbType.Date).Value = (object?)request.EndDate ?? DBNull.Value;
                 cmd.Parameters.Add("@COURT_ID", SqlDbType.Int).Value = (object?)request.CourtId ?? DBNull.Value;
                 cmd.Parameters.Add("@APPLICATION_TYPE_ID", SqlDbType.Int).Value = (object?)request.ApplicationTypeId ?? DBNull.Value;
-                cmd.Parameters.Add("@STATE_ID", SqlDbType.Int).Value = (object?)request.CaseStatus ?? DBNull.Value;
+                cmd.Parameters.Add("@STATE_ID", SqlDbType.Int).Value = (object?)request.StateId ?? DBNull.Value;
+                cmd.Parameters.Add("@ID_VIEW", SqlDbType.NVarChar, 100).Value = (object?)request.IdView ?? DBNull.Value;
+                cmd.Parameters.Add("@VOEN", SqlDbType.NVarChar, 100).Value = (object?)request.Voen ?? DBNull.Value;
+                cmd.Parameters.Add("@DOC_NUMBER", SqlDbType.NVarChar, 50).Value = (object?)request.DocNumber ?? DBNull.Value;
+                cmd.Parameters.Add("@PHYSICAL_NAME", SqlDbType.NVarChar, 50).Value = (object?)request.PhysicalName ?? DBNull.Value;
+                cmd.Parameters.Add("@PHYSICAL_SURNAME", SqlDbType.NVarChar, 50).Value = (object?)request.PhysicalSurname ?? DBNull.Value;
+                cmd.Parameters.Add("@PHYSICAL_LAST_NAME", SqlDbType.NVarChar, 50).Value = (object?)request.PhysicalLastName ?? DBNull.Value;
                 cmd.Parameters.Add("@PageNumber", SqlDbType.Int).Value = result.PageNumber;
                 cmd.Parameters.Add("@PageSize", SqlDbType.Int).Value = result.PageSize;
 
@@ -84,7 +91,7 @@ namespace CmsApi.Repositories.Implementations
                 using var connection = _connectionFactory.CreateMsSqlConnection();
                 await connection.OpenAsync();
 
-                using var cmd = new SqlCommand("P_GET_COMPLAINTS", connection)
+                using var cmd = new SqlCommand("P_GET_COMPLAINT_DETAILS", connection)
                 {
                     CommandType = CommandType.StoredProcedure,
                     CommandTimeout = 30
@@ -266,7 +273,64 @@ namespace CmsApi.Repositories.Implementations
                 throw;
             }
         }
-        
+
+
+        public async Task<ComplaintStatisticDto?> ComplaintStatisticAsync()
+        {
+            using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+
+            var result = new ComplaintStatisticDto();
+
+            // Birinci resultset
+            using var cmd = new SqlCommand("P_GET_COMPLAINT_STATISTICS", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                result.TotalComplaints = reader.SafeGet<long>("TotalComplaints");
+                result.CompletedComplaints = reader.SafeGet<long>("CompletedComplaints");
+                result.InProgressComplaints = reader.SafeGet<long>("InProgressComplaints");
+                result.NewComplaintsThisMonth = reader.SafeGet<long>("NewComplaintsThisMonth");
+            }
+
+            // İkinci resultset
+            if (await reader.NextResultAsync())
+            {
+                var years = new Dictionary<int, ComplaintYearDto>();
+
+                while (await reader.ReadAsync())
+                {
+                    var year = reader.SafeGet<int>("YEAR");
+
+                    if (!years.TryGetValue(year, out var yearDto))
+                    {
+                        yearDto = new ComplaintYearDto
+                        {
+                            Year = year,
+                            TotalCount = reader.SafeGet<int>("YEAR_COUNT"),
+                            Months = new List<ComplaintMonthDto>()
+                        };
+
+                        years.Add(year, yearDto);
+                    }
+
+                    yearDto.Months!.Add(new ComplaintMonthDto
+                    {
+                        Month = reader.SafeGet<string>("MONTH"),
+                        Count = reader.SafeGet<int>("MONTH_COUNT")
+                    });
+                }
+
+                result.Years = years.Values.ToList();
+            }
+
+            return result;
+        }
 
 
     }

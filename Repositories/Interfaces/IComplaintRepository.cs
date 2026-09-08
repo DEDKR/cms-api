@@ -7,5 +7,6 @@ namespace CmsApi.Repositories.Interfaces
     {
         Task<PagedResult<ComplaintListDto?>> GetComplaintsAsync(ComplaintListRequestDto request);
         Task<ComplaintDetailsDto?> GetComplaintDetailsAsync(long complaintId);
+        Task<ComplaintStatisticDto?> ComplaintStatisticAsync();
     }
 }

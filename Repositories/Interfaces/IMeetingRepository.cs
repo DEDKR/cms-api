@@ -7,5 +7,6 @@ namespace CmsApi.Repositories.Interfaces
     {
         Task<PagedResult<MeetingListItemDto>> GetMeetingsAsync(MeetingRequestDto meetingRequestDto);
         Task<MeetingDetailDto> MeetingDetail(long meetingId);
+        Task<MeetingStatisticDto?> MeetingStatisticAsync();
     }
 }

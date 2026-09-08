@@ -7,5 +7,6 @@ namespace CmsApi.Repositories.Interfaces
     {
         Task<PagedResult<PretenseListDto>> GetPretenseListAsync(PretenseListRequestDto payload);
         Task<PretenseDetailsDto> GetPretenseDetailsAsync(long pretenseId);
+        Task<PretenseStatisticDto> GetPretenseStatisticsAsync();
     }
 }

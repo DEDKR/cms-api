@@ -1,6 +1,7 @@
 ﻿using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.CaseDtos;
 using CmsApi.DTOs.Dashboard;
+using CmsApi.DTOs.Meeting;
 using CmsApi.Enums;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 

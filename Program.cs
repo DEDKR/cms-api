@@ -30,7 +30,13 @@ namespace CmsApi
             builder.Services.AddScoped<ICmsLoginService, CmsLoginService>();
             builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services.AddHttpClient<ICmsLoginHttpHandler, CmsLoginHttpHandler>();
-            builder.Services.AddHttpClient<ICmsHttpHandler, CmsHttpHandler>();
+            builder.Services
+    .AddHttpClient<ICmsHttpHandler, CmsHttpHandler>()
+    .ConfigurePrimaryHttpMessageHandler(() =>
+        new HttpClientHandler
+        {
+            UseProxy = false
+        });
             builder.Services.AddScoped<IMeetingRepository, MeetingRepository>();
             builder.Services.AddScoped<IDocumentService, DocumentService>();
             builder.Services.AddScoped<ICaseService, CaseService>();
