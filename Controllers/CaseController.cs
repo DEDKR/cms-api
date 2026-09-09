@@ -290,5 +290,16 @@ namespace CmsApi.Controllers
             return Ok(ApiResponse<object>.Ok("ok"));
 
         }
+
+
+        [HttpPost("analize-case")]
+        public async Task<IActionResult> UpsertCaseAnalysisResult([FromBody] CaseAnalysisResultRequestDto payload)
+        {
+            var result = await _caseService.UpsertCaseAnalysisResultAsync(payload);
+
+            return Ok(ApiResponse<long>.Ok(result));
+        }
+
+
     }
 }

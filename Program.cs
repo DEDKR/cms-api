@@ -81,7 +81,10 @@ namespace CmsApi
 
             app.UseCors(CorsExtensions.CorsPolicyName);
             app.UseSwagger();
-            app.UseSwaggerUI();
+            app.UseSwaggerUI(c =>
+            {
+                c.ConfigObject.AdditionalItems["syntaxHighlight"] = false;
+            });
 
             app.UseHttpsRedirection();
 

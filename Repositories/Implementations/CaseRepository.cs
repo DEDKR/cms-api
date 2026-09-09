@@ -43,7 +43,7 @@ namespace CmsApi.Repositories.Implementations
                 using var connection = _connectionFactory.CreateMsSqlConnection();
                 await connection.OpenAsync();
 
-               
+
 
                 using var cmd = new SqlCommand("[dbo].[P_GET_CASES]", connection)
                 {
@@ -54,23 +54,25 @@ namespace CmsApi.Repositories.Implementations
                 cmd.Parameters.Add("@CaseNo", SqlDbType.NVarChar, 100).Value =
                     (object?)request.CaseNo ?? DBNull.Value;
 
-                    cmd.Parameters.Add("@JudgeIds", SqlDbType.NVarChar).Value =
-                    request.JudgeIds is { Count: > 0 }
-                        ? string.Join(",", request.JudgeIds)
-                        : DBNull.Value;
+                cmd.Parameters.Add("@JudgeIds", SqlDbType.NVarChar).Value =
+                request.JudgeIds is { Count: > 0 }
+                    ? string.Join(",", request.JudgeIds)
+                    : DBNull.Value;
 
-                    cmd.Parameters.Add("@CaseTypeIds", SqlDbType.NVarChar).Value =
-                    request.CaseTypeIds is { Count: > 0 }
-                        ? string.Join(",", request.CaseTypeIds)
-                        : DBNull.Value;
+                cmd.Parameters.Add("@CaseTypeIds", SqlDbType.NVarChar).Value =
+                request.CaseTypeIds is { Count: > 0 }
+                    ? string.Join(",", request.CaseTypeIds)
+                    : DBNull.Value;
 
 
                 cmd.Parameters.Add("@CourtId", SqlDbType.Int).Value =
                     (object?)request.CourtId ?? DBNull.Value;
 
 
-                cmd.Parameters.Add("@CaseStatus", SqlDbType.Int).Value =
-                    (object?)request.CaseStatus ?? DBNull.Value;
+                cmd.Parameters.Add("@CaseStatus", SqlDbType.NVarChar, -1).Value =
+                    request.CaseStatus is { Count: > 0 }
+                        ? string.Join(",", request.CaseStatus)
+                        : DBNull.Value;
 
                 cmd.Parameters.Add("@OnlyWarningsCases", SqlDbType.Bit).Value =
                   (object?)request.OnlyWarningsCases ?? DBNull.Value;
@@ -248,7 +250,7 @@ namespace CmsApi.Repositories.Implementations
                     Attachment = new CaseDocAttachment(
                     reader["ATTACHMENT_IDS"]?.ToString(),
                     reader["FILE_NAME"]?.ToString()),
-                    IsImportant= reader.SafeGet<bool>("IS_IMPORTANT")
+                    IsImportant = reader.SafeGet<bool>("IS_IMPORTANT")
 
                 });
             }
@@ -381,7 +383,7 @@ namespace CmsApi.Repositories.Implementations
                     IsResolved = reader.SafeGet<bool>("IS_RESOLVED"),
                     ResolvedDate = reader.SafeGet<DateTime?>("RESOLVED_DATE"),
                     CreatedDate = reader.SafeGet<DateTime>("CREATED_DATE")
-                 
+
                 });
             }
 
@@ -507,7 +509,7 @@ namespace CmsApi.Repositories.Implementations
             return result;
         }
 
- 
+
 
         public async Task<List<CaseDocuments>> CaseDocumentsAsync(long caseId)
         {
@@ -549,7 +551,7 @@ namespace CmsApi.Repositories.Implementations
 
         public async Task<List<CaseStatusStatisticDto>> GetCaseStatusStatisticsAsync()
         {
-          
+
             var result = new List<CaseStatusStatisticDto>();
 
             await using var connection = _connectionFactory.CreateMsSqlConnection();
@@ -602,7 +604,7 @@ namespace CmsApi.Repositories.Implementations
                     CourtLevelId = reader.SafeGet<int>("COURT_LEVEL_ID"),
                     CourtLevelName = reader.SafeGet<string>("COURT_LEVEL_NAME"),
                     CaseCount = reader.SafeGet<int?>("CASE_COUNT")
-                   
+
                 });
             }
 
@@ -876,5 +878,31 @@ namespace CmsApi.Repositories.Implementations
 
             await command.ExecuteNonQueryAsync();
         }
+
+
+        public async Task<long> UpsertCaseAnalysisResultAsync(
+            CaseAnalysisResultRequestDto payload)
+        {
+            await using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+            await using var command = new SqlCommand(
+                "dbo.P_CASE_ANALYSIS_RESULT_UPSERT",
+                connection);
+            command.CommandType = CommandType.StoredProcedure;
+            command.Parameters.Add("@CASE_ID", SqlDbType.BigInt)
+                .Value = payload.CaseId;
+            command.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.NVarChar, -1)
+                .Value = (object?)payload.OfficeKeyCode ?? DBNull.Value;
+            command.Parameters.Add("@CASE_SUBJECT_KEY_CODE", SqlDbType.NVarChar, -1)
+                .Value = (object?)payload.CaseSubjectKeyCode ?? DBNull.Value;
+            command.Parameters.Add("@EXECUTER_USER_ID", SqlDbType.Int)
+                .Value = (object?)payload.ExecuterUserId ?? DBNull.Value;
+
+            var result = await command.ExecuteScalarAsync();
+
+            return Convert.ToInt64(result);
+        }
+
+
     }
 }

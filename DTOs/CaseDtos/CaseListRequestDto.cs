@@ -9,7 +9,7 @@
         public List<int>? JudgeIds { get; set; }
         public List<int>? CaseTypeIds { get; set; }
 
-        public int? CaseStatus { get; set; }
+        public List<int>? CaseStatus { get; set; }
 
         public DateTime? StartDate { get; set; }
 

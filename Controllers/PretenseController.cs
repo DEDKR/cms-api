@@ -12,7 +12,7 @@ namespace CmsApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     public class PretenseController : ControllerBase
     {
         private readonly IPretenseService _pretenseService;
@@ -27,7 +27,7 @@ namespace CmsApi.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> GetPretenses([FromQuery] PretenseListRequestDto request)
+        public async Task<IActionResult> GetPretenses([FromBody] PretenseListRequestDto request)
         {
             var pretenses = await _pretenseService.GetPretenseListAsync(request);
 

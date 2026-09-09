@@ -39,5 +39,7 @@ namespace CmsApi.Repositories.Interfaces
 
 
         Task UpdateCaseWarnings(long caseId, int messageId);
+
+        Task<long> UpsertCaseAnalysisResultAsync(CaseAnalysisResultRequestDto payload);
     }
 }

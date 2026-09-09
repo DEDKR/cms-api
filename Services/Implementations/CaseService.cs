@@ -510,7 +510,13 @@ namespace CmsApi.Services.Implementations
         }
 
 
+        public async Task<long> UpsertCaseAnalysisResultAsync(CaseAnalysisResultRequestDto payload)
+        {
+            var result = await _caseRepository.UpsertCaseAnalysisResultAsync(payload);
 
+
+            return result;
+        }
 
     }
 }

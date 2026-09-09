@@ -30,7 +30,7 @@ namespace CmsApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> GetComplaints([FromQuery] ComplaintListRequestDto request)
+        public async Task<IActionResult> GetComplaints([FromBody] ComplaintListRequestDto request)
         {
             var complaints = await _complaintService.GetComplaintsAsync(request);
 
