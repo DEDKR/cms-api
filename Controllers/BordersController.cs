@@ -16,10 +16,10 @@ namespace CmsApi.Controllers
             _cmsHttpHandler = cmsHttpHandler;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetBorders()
+        [HttpGet("{z:int}/{x:int}/{y:int}")]
+        public async Task<IActionResult> GetBorders(int z, int x, int y)
         {
-            var result = await _cmsHttpHandler.GetBordersAsync();
+            var result = await _cmsHttpHandler.GetBorderTileAsync(z, x, y);
 
             if (result is null)
             {
@@ -28,7 +28,12 @@ namespace CmsApi.Controllers
                     "Borders API request failed");
             }
 
-            return Ok(result);
+
+            //return Ok(result);
+
+            return File(
+            result,
+            "application/x-protobuf");
         }
     }
 }

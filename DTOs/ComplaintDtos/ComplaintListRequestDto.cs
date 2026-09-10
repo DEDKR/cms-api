@@ -13,7 +13,7 @@
         public string? PhysicalSurname { get; set; }
         public string? PhysicalLastName { get; set; }
 
-        public int? StateId { get; set; }
+        public int? Status { get; set; }
 
         public DateTime? StartDate { get; set; }
 

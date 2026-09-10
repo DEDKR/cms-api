@@ -11,5 +11,6 @@ namespace CmsApi.Http.Handlers.Interfaces
 
         Task<CmsApiResponse<DocumentDto>> GetDocumentAsBase64Async(string attachmentId);
         Task<JsonElement?> GetBordersAsync();
+        Task<byte[]?> GetBorderTileAsync(int z, int x, int y);
     }
 }

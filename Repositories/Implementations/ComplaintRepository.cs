@@ -41,7 +41,7 @@ namespace CmsApi.Repositories.Implementations
                 cmd.Parameters.Add("@END_DATE", SqlDbType.Date).Value = (object?)request.EndDate ?? DBNull.Value;
                 cmd.Parameters.Add("@COURT_ID", SqlDbType.Int).Value = (object?)request.CourtId ?? DBNull.Value;
                 cmd.Parameters.Add("@APPLICATION_TYPE_ID", SqlDbType.Int).Value = (object?)request.ApplicationTypeId ?? DBNull.Value;
-                cmd.Parameters.Add("@STATE_ID", SqlDbType.Int).Value = (object?)request.StateId ?? DBNull.Value;
+                cmd.Parameters.Add("@STATE_ID", SqlDbType.Int).Value = (object?)request.Status ?? DBNull.Value;
                 cmd.Parameters.Add("@ID_VIEW", SqlDbType.NVarChar, 100).Value = (object?)request.IdView ?? DBNull.Value;
                 cmd.Parameters.Add("@VOEN", SqlDbType.NVarChar, 100).Value = (object?)request.Voen ?? DBNull.Value;
                 cmd.Parameters.Add("@DOC_NUMBER", SqlDbType.NVarChar, 50).Value = (object?)request.DocNumber ?? DBNull.Value;

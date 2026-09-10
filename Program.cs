@@ -77,6 +77,9 @@ namespace CmsApi
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            // For caching Border token
+            builder.Services.AddMemoryCache();
+
             var app = builder.Build();
 
             app.UseCors(CorsExtensions.CorsPolicyName);
