@@ -10,6 +10,7 @@
         MeetTypes,
         CourtTypes,
         RealEstateTypes,
-        RegionalOffices
+        RegionalOffices,
+        ComplaintStatuses
     }
 }

@@ -7,6 +7,7 @@
         { ReferenceDataType.CaseTypes, "P_GET_CASE_TYPES" },
         { ReferenceDataType.MeetTypes, "P_GET_MEETING_TYPES" },
         { ReferenceDataType.CaseStatuses, "P_GET_CASE_STATUSES" },
+        { ReferenceDataType.ComplaintStatuses, "P_GET_COMPLAINT_STATUSES" },
         { ReferenceDataType.MeetingStatuses, "P_GET_MEETING_STATUSES" },
         { ReferenceDataType.Courts, "P_GET_COURTS" },
         { ReferenceDataType.Judges, "P_GET_JUDGES" },

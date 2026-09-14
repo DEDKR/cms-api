@@ -54,6 +54,13 @@ namespace CmsApi.Controllers
             null,
          parametr);
 
+        [HttpGet("complaint-statuses")]
+        public async Task<IActionResult> GetComplaintStatuses([FromQuery] string? parametr)
+            => await HandleReferenceDataAsync(
+         ReferenceDataType.ComplaintStatuses,
+            null,
+         parametr);
+
         [HttpGet("meeting-statuses")]
         public async Task<IActionResult> GetMeetingStatuses([FromQuery] string? parametr)
            => await HandleReferenceDataAsync(
