@@ -61,6 +61,13 @@ namespace CmsApi.Controllers
             null,
          parametr);
 
+        [HttpGet("pretense-statuses")]
+        public async Task<IActionResult> GetPretenseStatuses([FromQuery] string? parametr)
+            => await HandleReferenceDataAsync(
+         ReferenceDataType.PretenseStatuses,
+            null,
+         parametr);
+
         [HttpGet("meeting-statuses")]
         public async Task<IActionResult> GetMeetingStatuses([FromQuery] string? parametr)
            => await HandleReferenceDataAsync(

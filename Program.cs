@@ -1,5 +1,6 @@
 
 using CmsApi.Common;
+using CmsApi.Controllers;
 using CmsApi.DB;
 using CmsApi.Extensions;
 using CmsApi.Http.Handlers.Implementations;
@@ -54,6 +55,9 @@ namespace CmsApi
             // register Pretense service and repository
             builder.Services.AddScoped<IPretenseService, PretenseService>();
             builder.Services.AddScoped<IPretenseRepository, PretenseRepository>();
+
+            // register Assignment repository
+            builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
 
             builder.Services.AddAuthenticationServices(builder.Configuration);
 

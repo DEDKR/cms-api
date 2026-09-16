@@ -11,6 +11,7 @@
         CourtTypes,
         RealEstateTypes,
         RegionalOffices,
-        ComplaintStatuses
+        ComplaintStatuses,
+        PretenseStatuses
     }
 }
