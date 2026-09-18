@@ -300,6 +300,22 @@ namespace CmsApi.Controllers
             return Ok(ApiResponse<long>.Ok(result));
         }
 
+        [HttpGet("{caseId:long}/pdf")]
+        public async Task<IActionResult> GetCasePdf(long caseId)
+        {
+            var pdf = await _caseService.GetCasePdfAsync(caseId);
 
+            if (pdf is null)
+            {
+                return NotFound(
+                    ApiResponse<object>.Fail(
+                        "Case not found"));
+            }
+
+            return File(
+                pdf,
+                "application/pdf",
+                $"case-{caseId}.pdf");
+        }
     }
 }

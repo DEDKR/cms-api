@@ -11,6 +11,7 @@ using CmsApi.Services.Implementations;
 using CmsApi.Services.Interfaces;
 using CmsApi.Services.Interfaces.CmsApi.Services.Interfaces;
 using Microsoft.Data.SqlClient;
+using QuestPDF.Infrastructure;
 using System;
 using System.Data;
 
@@ -21,6 +22,8 @@ namespace CmsApi
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            QuestPDF.Settings.License = LicenseType.Evaluation; // QuestPDF license 
 
             builder.Services.AddScoped<IDbConnectionFactory, DbConnectionFactory>();
             builder.Services.AddScoped<ICaseRepository, CaseRepository>();
@@ -58,6 +61,9 @@ namespace CmsApi
 
             // register Assignment repository
             builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
+
+            // register CasePdfGenerator service
+            builder.Services.AddScoped<ICasePdfGenerator, CasePdfGenerator>();
 
             builder.Services.AddAuthenticationServices(builder.Configuration);
 

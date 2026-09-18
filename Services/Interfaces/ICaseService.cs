@@ -6,5 +6,7 @@ namespace CmsApi.Services.Interfaces
     {
         Task AnalizeCase(long caseId);
         Task<long> UpsertCaseAnalysisResultAsync(CaseAnalysisResultRequestDto payload);
+        Task<byte[]?> GetCasePdfAsync(long caseId);
+
     }
 }

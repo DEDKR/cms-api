@@ -12,11 +12,13 @@ namespace CmsApi.Services.Implementations
     {
         private readonly IDocumentService _documentService;
         private readonly ICaseRepository _caseRepository;
+        private readonly ICasePdfGenerator _casePdfGenerator;
 
-        public CaseService(IDocumentService documentService, ICaseRepository caseRepository)
+        public CaseService(IDocumentService documentService, ICaseRepository caseRepository, ICasePdfGenerator casePdfGenerator)
         {
             _documentService = documentService;
             _caseRepository = caseRepository;
+            _casePdfGenerator = casePdfGenerator;
         }
 
         public async Task AnalizeCase(long caseId)
@@ -517,6 +519,19 @@ namespace CmsApi.Services.Implementations
 
             return result;
         }
+
+        public async Task<byte[]?> GetCasePdfAsync(long caseId)
+        {
+            var caseDetail = await _caseRepository.GetCaseAsync(caseId);
+
+            if (caseDetail is null)
+                return null;
+
+            var pdf = _casePdfGenerator.Generate(caseDetail);
+
+            return pdf;
+        }
+
 
     }
 }

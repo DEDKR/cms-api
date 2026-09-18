@@ -1,6 +1,7 @@
 ﻿using CmsApi.Http.Handlers.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 
 namespace CmsApi.Controllers
 {
@@ -14,6 +15,22 @@ namespace CmsApi.Controllers
         public BordersController(ICmsHttpHandler cmsHttpHandler)
         {
             _cmsHttpHandler = cmsHttpHandler;
+        }
+
+        [HttpGet("legacy")]
+        public async Task<IActionResult> GetBordersLegacy()
+        {
+            var result =
+                await _cmsHttpHandler.GetBordersLegacyAsync();
+
+            if (result is null)
+            {
+                return StatusCode(
+                    StatusCodes.Status502BadGateway,
+                    "Border Legacy API request failed.");
+            }
+
+            return Ok(result.Value);
         }
 
         [HttpGet("{z:int}/{x:int}/{y:int}")]

@@ -10,7 +10,7 @@ namespace CmsApi.Http.Handlers.Interfaces
         Task<bool> SetAsReadAsync(string notificationId);
 
         Task<CmsApiResponse<DocumentDto>> GetDocumentAsBase64Async(string attachmentId);
-        Task<JsonElement?> GetBordersAsync();
+        Task<JsonElement?> GetBordersLegacyAsync();
         Task<byte[]?> GetBorderTileAsync(int z, int x, int y);
     }
 }

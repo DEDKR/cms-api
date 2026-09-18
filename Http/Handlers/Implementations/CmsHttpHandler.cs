@@ -205,7 +205,7 @@ namespace CmsApi.Http.Handlers.Implementations
         }
 
 
-        public async Task<JsonElement?> GetBordersAsync()
+        public async Task<JsonElement?> GetBordersLegacyAsync()
         {
             try
             {
@@ -253,7 +253,7 @@ namespace CmsApi.Http.Handlers.Implementations
                 // 2. Get coords
                 using var request = new HttpRequestMessage(
                     HttpMethod.Get,
-                    _apiSettings.BordersApi);
+                    _apiSettings.BordersApiLegacy);
 
                 request.Headers.Authorization =
                     new AuthenticationHeaderValue(
@@ -405,6 +405,9 @@ namespace CmsApi.Http.Handlers.Implementations
                 return null;
             }
         }
+
+
+       
 
 
 
