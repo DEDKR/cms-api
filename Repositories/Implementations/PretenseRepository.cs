@@ -188,7 +188,7 @@ namespace CmsApi.Repositories.Implementations
                     result.Signers = new PretenseSignerDto
                     {
                         Id = reader.SafeGet<long>("ID"),
-                        SignerCertId = reader.SafeGet<int>("SIGNER_CERT_ID"),
+                        SignerCertId = reader.SafeGet<string>("SIGNER_CERT_ID"),
                         SignerKey = reader.SafeGet<string>("SIGNER_KEY"),
                         SignerName = reader.SafeGet<string>("SIGNER_NAME"),
                         SignerPosition = reader.SafeGet<string>("SIGNER_POSITION")
