@@ -1,4 +1,5 @@
-﻿using CmsApi.Entities;
+﻿using CmsApi.DTOs.UserDtos;
+using CmsApi.Entities;
 
 namespace CmsApi.Repositories.Interfaces
 {
@@ -16,5 +17,9 @@ namespace CmsApi.Repositories.Interfaces
             int userId,
             int maxAttempts,
             int lockoutMinutes);
+
+        Task<UserResponseDto> GetUsers(int pageSize, int pageNumber);
+        Task<List<UserRolesResponse>> GetUserRoles();
+
     }
 }

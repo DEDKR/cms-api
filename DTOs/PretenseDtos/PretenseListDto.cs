@@ -2,6 +2,7 @@
 {
     public class PretenseListDto
     {
+        public long Id { get; set; }
         public string? ApplicationHeader { get; set; }
         public string? IdView { get; set; }
         public DateTime? InsertedDate { get; set; }

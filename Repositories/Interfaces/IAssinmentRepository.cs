@@ -2,7 +2,7 @@
 {
     public interface IAssignmentRepository
     {
-        Task<object> SetROToUserAsync(long userId, int roId);
+        Task<object> SetROToUserAsync(long userId, string roId);
         Task<object> SetMeetToUserAsync(long userId, long meetId, long attendedBy);
     }
 }

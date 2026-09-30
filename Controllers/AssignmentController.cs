@@ -20,7 +20,7 @@ namespace CmsApi.Controllers
         }
 
         [HttpPost("ro-to-user")]
-        public async Task<IActionResult> SetROToUser([Required] long userId, [Required] int roId)
+        public async Task<IActionResult> SetROToUser([Required] long userId, [Required] string roId)
         {
             var result = await _assignmentRepository.SetROToUserAsync(userId, roId);
             return Ok(result);

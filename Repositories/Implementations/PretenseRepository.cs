@@ -57,6 +57,7 @@ namespace CmsApi.Repositories.Implementations
 
                     result.Items.Add(new PretenseListDto
                     {
+                        Id = reader.SafeGet<long>("ID"),
                         ApplicationHeader = reader.SafeGet<string>("APPLICATION_HEADER"),
                         IdView = reader.SafeGet<string>("ID_VIEW"),
                         InsertedDate = reader.SafeGet<DateTime?>("INSERT_DATE"),

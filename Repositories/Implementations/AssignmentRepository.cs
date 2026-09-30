@@ -14,7 +14,7 @@ namespace CmsApi.Repositories.Implementations
             _dbConnectionFactory = dbConnectionFactory;
         }
 
-        public async Task<object> SetROToUserAsync(long userId, int roId)
+        public async Task<object> SetROToUserAsync(long userId, string roId)
         {
             using var connection = _dbConnectionFactory.CreateMsSqlConnection();
             await connection.OpenAsync();
@@ -26,8 +26,8 @@ namespace CmsApi.Repositories.Implementations
                 CommandTimeout = 30
             };
 
-            cmd.Parameters.Add("@USER_ID", SqlDbType.Int).Value = userId;
-            cmd.Parameters.Add("@RO_ID", SqlDbType.Int).Value = roId;
+            cmd.Parameters.Add("@USER_ID", SqlDbType.BigInt).Value = userId;
+            cmd.Parameters.Add("@RO_ID", SqlDbType.VarChar).Value = roId;
 
             var affectedRows = await cmd.ExecuteScalarAsync();
 

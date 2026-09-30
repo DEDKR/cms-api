@@ -1,4 +1,5 @@
 ﻿using CmsApi.DB;
+using CmsApi.DTOs.UserDtos;
 using CmsApi.Entities;
 using CmsApi.ExtensionMethods;
 using CmsApi.Repositories.Interfaces;
@@ -205,8 +206,96 @@ namespace CmsApi.Repositories.Implementations
         }
 
 
-        
+        public async Task<UserResponseDto> GetUsers(int pageSize, int pageNumber)
+        {
+            using var connection =
+                _dbConnectionFactory.CreateMsSqlConnection();
 
+            await connection.OpenAsync();
+
+            using var cmd = new SqlCommand(
+                "P_GET_USERS",
+                connection)
+            {
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 30
+            };
+
+            cmd.Parameters.Add("@PAGE_NUMBER", SqlDbType.Int)
+                .Value = pageNumber;
+
+            cmd.Parameters.Add("@PAGE_SIZE", SqlDbType.Int)
+                .Value = pageSize;
+
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            var result = new UserResponseDto();
+
+            // 1. Pagination
+            if (await reader.ReadAsync())
+            {
+                result.PageNumber = reader.SafeGet<int>("PAGE_NUMBER");
+                result.PageSize = reader.SafeGet<int>("PAGE_SIZE");
+                result.TotalCount = reader.SafeGet<int>("TOTAL_COUNT");
+                result.TotalPages = reader.SafeGet<int>("TOTAL_PAGES");
+                result.HasPrev = reader.SafeGet<bool>("HAS_PREV");
+                result.HasNext = reader.SafeGet<bool>("HAS_NEXT");
+            }
+
+            // Keçirik 2-ci result set-ə
+            if (await reader.NextResultAsync())
+            {
+                // 2. Users
+                while (await reader.ReadAsync())
+                {
+                    result.Items.Add(new UserItemDto
+                    {
+                        UserId = reader.SafeGet<int>("USER_ID"),
+                        RoleId = reader.SafeGet<int>("ROLE_ID"),
+                        RoleName = reader.SafeGet<string>("ROLE_NAME"),
+                        FirstName = reader.SafeGet<string>("FIRST_NAME"),
+                        LastName = reader.SafeGet<string>("LAST_NAME"),
+                        FatherName = reader.SafeGet<string>("FATHER_NAME"),
+                        Pin = reader.SafeGet<string>("PIN"),
+                        Username = reader.SafeGet<string>("USERNAME"),
+                        IsActive = reader.SafeGet<bool>("IS_ACTIVE"),
+                        InsertDate = reader.SafeGet<string>("INSERT_DATE"),
+                        PassChangeAt = reader.SafeGet<string>("PASS_CHANGE_AT"),
+                        RegionalOfficeId = reader.SafeGet<string>("REGIONAL_OFFICE_ID"),
+                        RegionalOfficeName = reader.SafeGet<string>("OFFICE_NAME")
+                    });
+                }
+            }
+
+            return result;
+        }
+
+
+        public async Task<List<UserRolesResponse>> GetUserRoles()
+        {
+            using var connection =
+                _dbConnectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+            using var cmd = new SqlCommand(
+                "P_GET_ROLES",
+                connection)
+            {
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 30
+            };
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            var result = new List<UserRolesResponse>();
+            while (await reader.ReadAsync())
+            {
+                result.Add(new UserRolesResponse
+                {
+                    RoleId = reader.SafeGet<int>("ROLE_ID"),
+                    Name = reader.SafeGet<string>("ROLE_NAME")
+                });
+            }
+            return result;
+        }
 
     }
 }

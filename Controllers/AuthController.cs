@@ -128,7 +128,7 @@ namespace CmsApi.Controllers
         /// Refresh token vasitəsilə yeni access və refresh token yaradır.
         /// </summary>
         [HttpPost("refresh")]
-        [AllowAnonymous]
+        [Authorize]
         public async Task<IActionResult> Refresh(
             [FromBody] RefreshTokenRequest request)
         {
