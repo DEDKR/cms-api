@@ -1,4 +1,4 @@
-﻿using CmsApi.DTOs.ApiDtos;
+using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.CaseDtos;
 using CmsApi.Repositories.Interfaces;
 using CmsApi.Services.Interfaces;
@@ -295,6 +295,31 @@ namespace CmsApi.Controllers
         [HttpPost("analize-case")]
         public async Task<IActionResult> UpsertCaseAnalysisResult([FromBody] CaseAnalysisResultRequestDto payload)
         {
+            if (!payload.CaseId.HasValue || payload.CaseId.Value <= 0)
+            {
+                return BadRequest(
+                    ApiResponse<object>.Fail("Case ID düzgün deyil."));
+            }
+
+            if (string.IsNullOrWhiteSpace(payload.OfficeKeyCode) &&
+                string.IsNullOrWhiteSpace(payload.CaseSubjectKeyCode))
+            {
+                return BadRequest(
+                    ApiResponse<object>.Fail("İcra orqanı və ya işin predmeti seçilməlidir."));
+            }
+
+            // EXECUTER_USER_ID frontend-dən qəbul edilmir, token-dən götürülür.
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrWhiteSpace(userIdClaim) ||
+                !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(
+                    ApiResponse<object>.Fail("User not authenticated"));
+            }
+
+            payload.ExecuterUserId = userId;
+
             var result = await _caseService.UpsertCaseAnalysisResultAsync(payload);
 
             return Ok(ApiResponse<long>.Ok(result));

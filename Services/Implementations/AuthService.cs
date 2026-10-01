@@ -131,6 +131,7 @@ namespace CmsApi.Services.Implementations
                     User = new UserDto
                     {
                         UserId = user.UserId,
+                        RoleId = user.RoleId,
                         Username = user.Username,
                         RoleName = user.Role,
                         FullName = user.FirstName + " " + user.LastName + " " + user.FatherName,

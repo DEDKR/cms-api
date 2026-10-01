@@ -43,7 +43,7 @@ namespace CmsApi.Repositories.Implementations
                 result.Items.Add(new MeetingListItemDto
                 {
                     Id = reader.SafeGet<long>("ID"),
-                    Ids = reader.SafeGet<string>("ID"),
+                    Ids = reader.SafeGet<string?>("MEETING_IDS"),
                     CaseNo = reader.SafeGet<string>("CASE_NO"),
                     MeetingDate = reader.SafeGet<DateTime?>("MEETING_DATE"),
                     MeetingType = reader.SafeGet<string>("MEETING_TYPE"),
@@ -51,7 +51,9 @@ namespace CmsApi.Repositories.Implementations
                     Hall = reader.SafeGet<string>("HALL"),
                     Judge = reader.SafeGet<string>("JUDGE_NAME"),
                     MeetingStatus = reader.SafeGet<string>("MEETING_STATUS"),
-                    ParticipationRole = reader.SafeGet<string>("PARTY_TYPE"),
+                    ParticipationRole = reader.SafeGet<string?>("PARTY_TYPE"),
+                    AssignedUsers = reader.SafeGet<string?>("ASSIGNED_USERS"),
+                    AssignedUserIds = reader.SafeGet<string?>("ASSIGNED_USER_IDS"),
 
                 });
 

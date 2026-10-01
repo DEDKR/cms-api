@@ -3,14 +3,18 @@
     public class MeetingListItemDto
     {
         public long Id { get; set; }
-        public string Ids { get; set; }
-        public string CaseNo { get; set; }
+        public string? Ids { get; set; }
+        public string? CaseNo { get; set; }
         public DateTime? MeetingDate { get; set; }
-        public string MeetingType { get; set; }
-        public string Court { get; set; }
+        public string? MeetingType { get; set; }
+        public string? Court { get; set; }
         public string? Hall { get; set; }
-        public string Judge { get; set; }
-        public string MeetingStatus { get; set; }
-        public string ParticipationRole { get; set; }
+        public string? Judge { get; set; }
+        public string? MeetingStatus { get; set; }
+        public string? ParticipationRole { get; set; }
+
+        // Admin paneldə mövcud iclas təyinatını göstərmək üçün.
+        public string? AssignedUsers { get; set; }
+        public string? AssignedUserIds { get; set; }
     }
 }

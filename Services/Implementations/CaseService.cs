@@ -1,4 +1,4 @@
-﻿using CmsApi.DTOs.CaseDtos;
+using CmsApi.DTOs.CaseDtos;
 using CmsApi.Enums;
 using CmsApi.Repositories.Interfaces;
 using CmsApi.Services.Interfaces;
@@ -516,6 +516,23 @@ namespace CmsApi.Services.Implementations
         {
             var result = await _caseRepository.UpsertCaseAnalysisResultAsync(payload);
 
+            if (payload.CaseId.HasValue)
+            {
+                // Admin dəyəri əl ilə seçibsə, həmin xəbərdarlığı bağlayırıq.
+                if (!string.IsNullOrWhiteSpace(payload.OfficeKeyCode))
+                {
+                    await _caseRepository.UpdateCaseWarnings(
+                        payload.CaseId.Value,
+                        (int)CaseAnalysisWarningType.EnforcementAuthorityNotFound);
+                }
+
+                if (!string.IsNullOrWhiteSpace(payload.CaseSubjectKeyCode))
+                {
+                    await _caseRepository.UpdateCaseWarnings(
+                        payload.CaseId.Value,
+                        (int)CaseAnalysisWarningType.CaseSubjectNotFound);
+                }
+            }
 
             return result;
         }

@@ -1,4 +1,4 @@
-﻿using CmsApi.DB;
+using CmsApi.DB;
 using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.CaseDtos;
 using CmsApi.DTOs.Dashboard;
@@ -891,9 +891,9 @@ namespace CmsApi.Repositories.Implementations
             command.CommandType = CommandType.StoredProcedure;
             command.Parameters.Add("@CASE_ID", SqlDbType.BigInt)
                 .Value = payload.CaseId;
-            command.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.NVarChar, -1)
+            command.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10)
                 .Value = (object?)payload.OfficeKeyCode ?? DBNull.Value;
-            command.Parameters.Add("@CASE_SUBJECT_KEY_CODE", SqlDbType.NVarChar, -1)
+            command.Parameters.Add("@CASE_SUBJECT_KEY_CODE", SqlDbType.VarChar, 10)
                 .Value = (object?)payload.CaseSubjectKeyCode ?? DBNull.Value;
             command.Parameters.Add("@EXECUTER_USER_ID", SqlDbType.Int)
                 .Value = (object?)payload.ExecuterUserId ?? DBNull.Value;
