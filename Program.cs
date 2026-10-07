@@ -5,6 +5,7 @@ using CmsApi.DB;
 using CmsApi.Extensions;
 using CmsApi.Http.Handlers.Implementations;
 using CmsApi.Http.Handlers.Interfaces;
+using CmsApi.Middleware;
 using CmsApi.Repositories.Implementations;
 using CmsApi.Repositories.Interfaces;
 using CmsApi.Services.Implementations;
@@ -49,6 +50,7 @@ namespace CmsApi
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<ITokenRepository, TokenRepository>();
             builder.Services.AddScoped<IPasswordService, PasswordService>();
+            builder.Services.AddScoped<IPasswordPolicyService, PasswordPolicyService>();
             builder.Services.AddScoped<ITokenService, TokenService>();
 
             // register Complaint service and repository
@@ -102,6 +104,11 @@ namespace CmsApi
             app.UseHttpsRedirection();
 
             app.UseAuthentication();
+
+            // Content(1)-dəki rate-limit məntiqi: endpoint üzrə sayğac,
+            // limit aşılarsa user/IP üçün bütün API bloklanır.
+            app.UseMiddleware<ApiRateLimitMiddleware>();
+
             app.UseAuthorization();
 
             app.MapControllers();

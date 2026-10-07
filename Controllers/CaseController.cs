@@ -281,7 +281,7 @@ namespace CmsApi.Controllers
 
 
         [HttpGet("analize-case")]
-        [AllowAnonymous]
+        [Authorize]
 
         public async Task<IActionResult> AnalizeCase([FromQuery] long caseId)
         {
