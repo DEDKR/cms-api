@@ -20,9 +20,9 @@ namespace CmsApi.Middleware
         private const int DefaultWindowSeconds = 60;
         private const int DefaultMaxRequests = 20;
 
-        private const int FirstBlockMinutes = 15;
-        private const int SecondBlockMinutes = 60;
-        private const int ThirdBlockMinutes = 720; // 12 saat
+        private const int FirstBlockMinutes = 1;
+        private const int SecondBlockMinutes = 2;
+        private const int ThirdBlockMinutes = 3; // 12 saat
 
         private const int ViolationPeriodHours = 24;
 
