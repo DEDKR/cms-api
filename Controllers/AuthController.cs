@@ -1,4 +1,4 @@
-﻿using CmsApi.DTOs.ApiDtos;
+using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.AuthDtos;
 using CmsApi.Services.Interfaces;
 using CmsApi.Services.Interfaces.CmsApi.Services.Interfaces;
@@ -220,6 +220,11 @@ namespace CmsApi.Controllers
                 return Unauthorized(
                     ApiResponse<object>.Fail(
                         "Current password is incorrect"));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(
+                    ApiResponse<object>.Fail(ex.Message));
             }
             catch (Exception ex)
             {

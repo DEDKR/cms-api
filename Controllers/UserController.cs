@@ -13,14 +13,10 @@ namespace CmsApi.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserRepository _userRepository;
-        private readonly IPasswordPolicyService _passwordPolicyService;
 
-        public UserController(
-            IUserRepository userRepository,
-            IPasswordPolicyService passwordPolicyService)
+        public UserController(IUserRepository userRepository)
         {
             _userRepository = userRepository;
-            _passwordPolicyService = passwordPolicyService;
         }
 
         [HttpPost]
@@ -47,20 +43,6 @@ namespace CmsApi.Controllers
         [HttpPost("create")]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserRequestDto request)
         {
-            // Content(1)-dəki parol qaydaları:
-            // min 8, böyük hərf, kiçik hərf, rəqəm, xüsusi simvol.
-            var passwordPolicyError =
-                _passwordPolicyService.Validate(
-                    request.InitialPassword,
-                    passwordRequired: true);
-
-            if (passwordPolicyError is not null)
-            {
-                return BadRequest(
-                    ApiResponse<object>.Fail(
-                        passwordPolicyError));
-            }
-
             var userId = await _userRepository.CreateUserAsync(request);
 
             if (userId == -1)
