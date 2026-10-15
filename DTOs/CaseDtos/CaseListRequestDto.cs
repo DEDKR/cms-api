@@ -5,6 +5,7 @@
         public string? CaseNo { get; set; }
 
         public int? CourtId { get; set; }
+        public int? CourtLevelId { get; set; }
 
         public List<int>? JudgeIds { get; set; }
         public List<int>? CaseTypeIds { get; set; }

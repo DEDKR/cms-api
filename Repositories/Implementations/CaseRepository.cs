@@ -138,6 +138,14 @@ namespace CmsApi.Repositories.Implementations
                     (object?)request.EndDate ??
                     DBNull.Value;
 
+            cmd.Parameters
+                .Add(
+                    "@CourtLevelId",
+                    SqlDbType.Int)
+                .Value =
+                    (object?)request.CourtLevelId ??
+                    DBNull.Value;
+
 
             cmd.Parameters
                 .Add(

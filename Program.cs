@@ -47,6 +47,7 @@ namespace CmsApi
             builder.Services.AddScoped<ICaseService, CaseService>();
             builder.Services.AddScoped<IDashboardService, DashboardService>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<ICaseAnalysisStatisticsRepository, CaseAnalysisStatisticsRepository>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<ITokenRepository, TokenRepository>();
             builder.Services.AddScoped<IPasswordService, PasswordService>();
