@@ -68,6 +68,9 @@ namespace CmsApi
             // register CasePdfGenerator service
             builder.Services.AddScoped<ICasePdfGenerator, CasePdfGenerator>();
 
+            //register Reports repository
+            builder.Services.AddScoped<IReportsRepository, ReportsRepository>();
+
             builder.Services.AddAuthenticationServices(builder.Configuration);
 
 

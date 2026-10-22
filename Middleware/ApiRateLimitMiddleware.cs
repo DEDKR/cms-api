@@ -18,11 +18,11 @@ namespace CmsApi.Middleware
     public sealed class ApiRateLimitMiddleware
     {
         private const int DefaultWindowSeconds = 60;
-        private const int DefaultMaxRequests = 20;
+        private const int DefaultMaxRequests = 200;
 
         private const int FirstBlockMinutes = 1;
-        private const int SecondBlockMinutes = 2;
-        private const int ThirdBlockMinutes = 3; // 12 saat
+        private const int SecondBlockMinutes = 1;
+        private const int ThirdBlockMinutes = 1; // 12 saat
 
         private const int ViolationPeriodHours = 24;
 
