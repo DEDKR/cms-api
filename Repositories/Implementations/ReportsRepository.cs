@@ -18,7 +18,7 @@ namespace CmsApi.Repositories.Implementations
         }
 
         public async Task<List<FirstInstanceResponse>> GetFirstInstanceReportAsync(
-    FirstInstanceRequest payload)
+    FirstInstanceRequest payload, string? officeKeyCode)
         {
             var result = new List<FirstInstanceResponse>();
 
@@ -41,11 +41,12 @@ namespace CmsApi.Repositories.Implementations
                 (object?)payload.To ?? DBNull.Value;
 
             cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.NVarChar, 50).Value =
-                string.IsNullOrWhiteSpace(payload.OfficeKeyCode)
-                    ? DBNull.Value
-                    : payload.OfficeKeyCode;
+                (object?)officeKeyCode ?? DBNull.Value;
 
             cmd.Parameters.Add("@BY_COURT", SqlDbType.Bit).Value = payload.ByCourt;
+
+            cmd.Parameters.Add("@COURT_TYPE_ID", SqlDbType.Int).Value =
+                (object?)payload.CourtTypeId ?? DBNull.Value;
 
             using var reader = await cmd.ExecuteReaderAsync();
 
@@ -90,7 +91,7 @@ namespace CmsApi.Repositories.Implementations
         }
 
         public async Task<List<AppealResponse>> GetAppealReportAsync(
-    AppealRequest payload)
+    AppealRequest payload, string? officeKeyCode)
         {
             var result = new List<AppealResponse>();
 
@@ -113,11 +114,12 @@ namespace CmsApi.Repositories.Implementations
                 (object?)payload.To ?? DBNull.Value;
 
             cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.NVarChar, 50).Value =
-                string.IsNullOrWhiteSpace(payload.OfficeKeyCode)
-                    ? DBNull.Value
-                    : payload.OfficeKeyCode;
+                (object?)officeKeyCode ?? DBNull.Value;
 
             cmd.Parameters.Add("@BY_COURT", SqlDbType.Bit).Value = payload.ByCourt;
+
+            cmd.Parameters.Add("@COURT_TYPE_ID", SqlDbType.Int).Value =
+                (object?)payload.CourtTypeId ?? DBNull.Value;
 
             using var reader = await cmd.ExecuteReaderAsync();
 
@@ -150,7 +152,7 @@ namespace CmsApi.Repositories.Implementations
         }
 
         public async Task<List<CassasionResponse>> GetCassasionReportAsync(
-    CassasionRequest payload)
+    CassasionRequest payload, string? officeKeyCode)
         {
             var result = new List<CassasionResponse>();
 
@@ -173,11 +175,12 @@ namespace CmsApi.Repositories.Implementations
                 (object?)payload.To ?? DBNull.Value;
 
             cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.NVarChar, 50).Value =
-                string.IsNullOrWhiteSpace(payload.OfficeKeyCode)
-                    ? DBNull.Value
-                    : payload.OfficeKeyCode;
+                (object?)officeKeyCode ?? DBNull.Value;
 
             cmd.Parameters.Add("@BY_COURT", SqlDbType.Bit).Value = payload.ByCourt;
+
+            cmd.Parameters.Add("@COURT_TYPE_ID", SqlDbType.Int).Value =
+                (object?)payload.CourtTypeId ?? DBNull.Value;
 
             using var reader = await cmd.ExecuteReaderAsync();
 
@@ -210,7 +213,7 @@ namespace CmsApi.Repositories.Implementations
         }
 
         public async Task<List<MeetingResponse>> GetMeetingReportAsync(
-    MeetingRequest payload)
+    MeetingRequest payload, string? officeKeyCode)
         {
             var result = new List<MeetingResponse>();
 
@@ -233,11 +236,12 @@ namespace CmsApi.Repositories.Implementations
                 (object?)payload.To ?? DBNull.Value;
 
             cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.NVarChar, 50).Value =
-                string.IsNullOrWhiteSpace(payload.OfficeKeyCode)
-                    ? DBNull.Value
-                    : payload.OfficeKeyCode;
+                (object?)officeKeyCode ?? DBNull.Value;
 
             cmd.Parameters.Add("@BY_COURT", SqlDbType.Bit).Value = payload.ByCourt;
+
+            cmd.Parameters.Add("@COURT_TYPE_ID", SqlDbType.Int).Value =
+                (object?)payload.CourtTypeId ?? DBNull.Value;
 
             using var reader = await cmd.ExecuteReaderAsync();
 

@@ -1,4 +1,4 @@
-using CmsApi.DTOs.AuthDtos;
+﻿using CmsApi.DTOs.AuthDtos;
 using CmsApi.Repositories.Interfaces;
 using CmsApi.Services.Interfaces;
 using CmsApi.Services.Interfaces.CmsApi.Services.Interfaces;
@@ -135,6 +135,7 @@ namespace CmsApi.Services.Implementations
                     {
                         UserId = user.UserId,
                         RoleId = user.RoleId,
+                        OfficeKeyCode = user.OfficeKeyCode,
                         Username = user.Username,
                         RoleName = user.Role,
                         FullName = user.FirstName + " " + user.LastName + " " + user.FatherName,

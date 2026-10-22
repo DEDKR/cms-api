@@ -1,4 +1,4 @@
-using CmsApi.DB;
+﻿using CmsApi.DB;
 using CmsApi.DTOs.UserDtos;
 using CmsApi.Entities;
 using CmsApi.ExtensionMethods;
@@ -168,6 +168,7 @@ namespace CmsApi.Repositories.Implementations
             {
                 UserId = reader.SafeGet<int>("USER_ID"),
                 RoleId = reader.SafeGet<byte?>("ROLE_ID"),
+                OfficeKeyCode = reader.SafeGet<string?>("OFFICE_KEY_CODE"),
                 Role = reader.SafeGet<string?>("ROLE"),
                 FirstName = reader.SafeGet<string?>("FIRST_NAME"),
                 LastName = reader.SafeGet<string?>("LAST_NAME"),

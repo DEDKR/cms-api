@@ -6,5 +6,6 @@ namespace CmsApi.DTOs.Reports.Appeals
         public DateTime? To { get; set; }
         public string? OfficeKeyCode { get; set; }
         public bool ByCourt { get; set; }
+        public int? CourtTypeId { get; set; }
     }
 }
