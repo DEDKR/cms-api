@@ -1,6 +1,7 @@
 ﻿using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.CaseDtos;
 using CmsApi.DTOs.Dashboard;
+using CmsApi.DTOs.Meeting;
 using CmsApi.Enums;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -23,8 +24,7 @@ namespace CmsApi.Repositories.Interfaces
 
         Task<CaseOrBaseCaseGetDto> GetCaseOrStarterCaseAsync(long caseId);
 
-        Task<long> InsertCaseDocumentRawContentAsync(
-    InsertCaseDocumentRawContentRequestDto request);
+        Task<long> InsertCaseDocumentRawContentAsync(InsertCaseDocumentRawContentRequestDto request);
 
         Task<List<CaseForAnalizeDto>> CaseForAnalizesAsync();
 
@@ -39,5 +39,7 @@ namespace CmsApi.Repositories.Interfaces
 
 
         Task UpdateCaseWarnings(long caseId, int messageId);
+
+        Task<long> UpsertCaseAnalysisResultAsync(CaseAnalysisResultRequestDto payload);
     }
 }

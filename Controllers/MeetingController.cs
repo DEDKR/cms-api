@@ -113,13 +113,62 @@ namespace CmsApi.Controllers
             if (result?.MeetingView is null)
             {
                 return NotFound(
-                    ApiResponse<CaseDetailDto>.Fail(
-                        "Case not found",
+                    ApiResponse<MeetingDetailDto>.Fail(
+                        "Meeting not found",
                         StatusCodes.Status404NotFound));
             }
 
             return Ok(ApiResponse<MeetingDetailDto>.Ok(result));
 
         }
+
+        [HttpGet("statistics")]
+        public async Task<IActionResult> GetMeetingStatistics()
+        {
+            var userIdClaim =
+               User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userIdClaim) ||
+                !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(
+                    ApiResponse<object>.Fail(
+                        "User not authenticated"));
+            }
+
+            var user =
+                await _userRepository.GetByIdAsync(userId);
+
+            if (user == null)
+            {
+                return NotFound(
+                    ApiResponse<object>.Fail(
+                        "User not found"));
+            }
+
+            if (user.LockoutUntil.HasValue &&
+              user.LockoutUntil.Value > DateTime.Now)
+            {
+                return Unauthorized(
+                    ApiResponse<object>.Fail(
+                        "Account is temporarily locked"));
+            }
+
+
+            if (user.IsPassChangeRequired)
+            {
+                return StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    ApiResponse<object>.Fail(
+                        "Password change is required"));
+            }
+
+            var result = await _meetingRepository.MeetingStatisticAsync();
+
+            return Ok(ApiResponse<MeetingStatisticDto>.Ok(result));
+        }
+
+
+
     }
 }

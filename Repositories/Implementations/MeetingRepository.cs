@@ -43,7 +43,7 @@ namespace CmsApi.Repositories.Implementations
                 result.Items.Add(new MeetingListItemDto
                 {
                     Id = reader.SafeGet<long>("ID"),
-                    Ids = reader.SafeGet<string>("ID"),
+                    Ids = reader.SafeGet<string?>("MEETING_IDS"),
                     CaseNo = reader.SafeGet<string>("CASE_NO"),
                     MeetingDate = reader.SafeGet<DateTime?>("MEETING_DATE"),
                     MeetingType = reader.SafeGet<string>("MEETING_TYPE"),
@@ -51,7 +51,9 @@ namespace CmsApi.Repositories.Implementations
                     Hall = reader.SafeGet<string>("HALL"),
                     Judge = reader.SafeGet<string>("JUDGE_NAME"),
                     MeetingStatus = reader.SafeGet<string>("MEETING_STATUS"),
-                    ParticipationRole = reader.SafeGet<string>("PARTY_TYPE"),
+                    ParticipationRole = reader.SafeGet<string?>("PARTY_TYPE"),
+                    AssignedUsers = reader.SafeGet<string?>("ASSIGNED_USERS"),
+                    AssignedUserIds = reader.SafeGet<string?>("ASSIGNED_USER_IDS"),
 
                 });
 
@@ -160,6 +162,64 @@ namespace CmsApi.Repositories.Implementations
             return result;
         }
 
-       
+
+        public async Task<MeetingStatisticDto?> MeetingStatisticAsync()
+        {
+            using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+
+            var result = new MeetingStatisticDto();
+
+            // Birinci resultset
+            using var cmd = new SqlCommand("P_GET_MEET_STATISTICS", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                result.TotalMeetings = reader.SafeGet<long>("TotalMeetings");
+                result.CompletedMeetings = reader.SafeGet<long>("CompletedMeetings");
+                result.InProgressMeetings = reader.SafeGet<long>("InProgressMeetings");
+                result.NewMeetingsThisMonth = reader.SafeGet<long>("NewMeetingsThisMonth");
+            }
+
+            // İkinci resultset
+            if (await reader.NextResultAsync())
+            {
+                var years = new Dictionary<int, MeetingYearDto>();
+
+                while (await reader.ReadAsync())
+                {
+                    var year = reader.SafeGet<int>("YEAR");
+
+                    if (!years.TryGetValue(year, out var yearDto))
+                    {
+                        yearDto = new MeetingYearDto
+                        {
+                            Year = year,
+                            TotalCount = reader.SafeGet<int>("YEAR_COUNT"),
+                            Months = new List<MeetingMonthDto>()
+                        };
+
+                        years.Add(year, yearDto);
+                    }
+
+                    yearDto.Months!.Add(new MeetingMonthDto
+                    {
+                        Month = reader.SafeGet<string>("MONTH"),
+                        Count = reader.SafeGet<int>("MONTH_COUNT")
+                    });
+                }
+
+                result.Years = years.Values.ToList();
+            }
+
+            return result;
+        }
+
+
     }
 }

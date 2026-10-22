@@ -1,4 +1,4 @@
-﻿using CmsApi.DTOs.ApiDtos;
+using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.CaseDtos;
 using CmsApi.Repositories.Interfaces;
 using CmsApi.Services.Interfaces;
@@ -281,7 +281,7 @@ namespace CmsApi.Controllers
 
 
         [HttpGet("analize-case")]
-        [AllowAnonymous]
+        [Authorize]
 
         public async Task<IActionResult> AnalizeCase([FromQuery] long caseId)
         {
@@ -289,6 +289,58 @@ namespace CmsApi.Controllers
 
             return Ok(ApiResponse<object>.Ok("ok"));
 
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("analize-case")]
+        public async Task<IActionResult> UpsertCaseAnalysisResult([FromBody] CaseAnalysisResultRequestDto payload)
+        {
+            if (!payload.CaseId.HasValue || payload.CaseId.Value <= 0)
+            {
+                return BadRequest(
+                    ApiResponse<object>.Fail("Case ID düzgün deyil."));
+            }
+
+            if (string.IsNullOrWhiteSpace(payload.OfficeKeyCode) &&
+                string.IsNullOrWhiteSpace(payload.CaseSubjectKeyCode))
+            {
+                return BadRequest(
+                    ApiResponse<object>.Fail("İcra orqanı və ya işin predmeti seçilməlidir."));
+            }
+
+            // EXECUTER_USER_ID frontend-dən qəbul edilmir, token-dən götürülür.
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrWhiteSpace(userIdClaim) ||
+                !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(
+                    ApiResponse<object>.Fail("User not authenticated"));
+            }
+
+            payload.ExecuterUserId = userId;
+
+            var result = await _caseService.UpsertCaseAnalysisResultAsync(payload);
+
+            return Ok(ApiResponse<long>.Ok(result));
+        }
+
+        [HttpGet("{caseId:long}/pdf")]
+        public async Task<IActionResult> GetCasePdf(long caseId)
+        {
+            var pdf = await _caseService.GetCasePdfAsync(caseId);
+
+            if (pdf is null)
+            {
+                return NotFound(
+                    ApiResponse<object>.Fail(
+                        "Case not found"));
+            }
+
+            return File(
+                pdf,
+                "application/pdf",
+                $"case-{caseId}.pdf");
         }
     }
 }
