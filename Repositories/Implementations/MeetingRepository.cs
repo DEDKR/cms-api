@@ -1,4 +1,4 @@
-﻿using CmsApi.DB;
+using CmsApi.DB;
 using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.Meeting;
 using CmsApi.ExtensionMethods;
@@ -18,7 +18,7 @@ namespace CmsApi.Repositories.Implementations
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<PagedResult<MeetingListItemDto>> GetMeetingsAsync(MeetingRequestDto meetingRequestDto)
+        public async Task<PagedResult<MeetingListItemDto>> GetMeetingsAsync(MeetingRequestDto meetingRequestDto, string? officeKeyCode)
         {
             var result = new PagedResult<MeetingListItemDto>
             {
@@ -33,7 +33,10 @@ namespace CmsApi.Repositories.Implementations
             using var command = new SqlCommand("P_GET_MEETINGS", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.Add("@JsonData", SqlDbType.NVarChar).Value = json;
+            command.Parameters.Add("@JsonData", SqlDbType.NVarChar, -1).Value = json;
+            // NULL is valid ONLY after RegionalOfficeScope has approved Admin / RO_00.
+            command.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value =
+                (object?)officeKeyCode ?? DBNull.Value;
 
 
             using var reader = await command.ExecuteReaderAsync();
@@ -68,6 +71,37 @@ namespace CmsApi.Repositories.Implementations
             result.PageSize = meetingRequestDto.PageSize;
 
             return result;
+        }
+
+        // Does not expose meeting details until related case is authorized.
+        // Requires dbo.TBL_MEETINGS.CASE_ID (see SQL preflight).
+        public async Task<bool> CanAccessMeetingAsync(long meetingId, string? officeKeyCode)
+        {
+            using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+
+            using var command = new SqlCommand(@"
+                SELECT CASE WHEN EXISTS (
+                    SELECT 1
+                    FROM dbo.TBL_MEETINGS M
+                    INNER JOIN dbo.TBL_CASES C ON C.ID = M.CASE_ID
+                    WHERE M.ID = @MEETING_ID
+                      AND (
+                          @OFFICE_KEY_CODE IS NULL
+                          OR EXISTS (
+                              SELECT 1
+                              FROM dbo.TBL_CASE_ANALYSIS_RESULT CAR
+                              WHERE CAR.CASE_ID = C.ID
+                                AND CAR.OFFICE_KEY_CODE = @OFFICE_KEY_CODE
+                          )
+                      )
+                ) THEN 1 ELSE 0 END", connection);
+
+            command.Parameters.Add("@MEETING_ID", SqlDbType.BigInt).Value = meetingId;
+            command.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value =
+                (object?)officeKeyCode ?? DBNull.Value;
+
+            return Convert.ToInt32(await command.ExecuteScalarAsync()) == 1;
         }
 
         public async Task<MeetingDetailDto> MeetingDetail(long meetingId)
@@ -163,7 +197,7 @@ namespace CmsApi.Repositories.Implementations
         }
 
 
-        public async Task<MeetingStatisticDto?> MeetingStatisticAsync()
+        public async Task<MeetingStatisticDto?> MeetingStatisticAsync(string? officeKeyCode)
         {
             using var connection = _connectionFactory.CreateMsSqlConnection();
             await connection.OpenAsync();
@@ -175,6 +209,13 @@ namespace CmsApi.Repositories.Implementations
             {
                 CommandType = CommandType.StoredProcedure
             };
+
+            // Old procedure stays unchanged for Admin / RO_00.
+            // For limited users P_GET_MEET_STATISTICS MUST be upgraded to accept
+            // @OFFICE_KEY_CODE and apply the same EXISTS filter to all result sets.
+            // Otherwise SQL throws rather than leaking global statistics.
+            if (officeKeyCode is not null)
+                cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
 
             using var reader = await cmd.ExecuteReaderAsync();
 

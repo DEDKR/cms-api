@@ -6,11 +6,37 @@ using CmsApi.DTOs.Reports.Meeting;
 using CmsApi.Repositories.Interfaces;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System;
+using System.Linq;
 
 namespace CmsApi.Repositories.Implementations
 {
     public class ReportsRepository : IReportsRepository
     {
+        // Some deployed procedures use REGIONAL_OFFICE_KEY_CODE, others OFFICE_KEY_CODE.
+        // Optional reads retain compatibility while allowing stable office grouping in Excel.
+        private static int? FindColumn(SqlDataReader reader, params string[] names)
+        {
+            for (int index = 0; index < reader.FieldCount; index++)
+                if (names.Any(name => string.Equals(reader.GetName(index), name, StringComparison.OrdinalIgnoreCase)))
+                    return index;
+            return null;
+        }
+
+        private static string ReadOfficeCode(SqlDataReader reader)
+        {
+            var ordinal = FindColumn(reader, "REGIONAL_OFFICE_KEY_CODE", "OFFICE_KEY_CODE");
+            return ordinal.HasValue && !reader.IsDBNull(ordinal.Value)
+                ? reader.GetValue(ordinal.Value).ToString() ?? string.Empty : string.Empty;
+        }
+
+        private static int? ReadCourtId(SqlDataReader reader)
+        {
+            var ordinal = FindColumn(reader, "COURT_ID");
+            return ordinal.HasValue && !reader.IsDBNull(ordinal.Value)
+                ? Convert.ToInt32(reader.GetValue(ordinal.Value)) : null;
+        }
+
         private readonly IDbConnectionFactory _dbConnectionFactory;
         public ReportsRepository(IDbConnectionFactory dbConnectionFactory)
         {
@@ -81,7 +107,15 @@ namespace CmsApi.Repositories.Implementations
                         reader["NOT_CONSIDERED_CLAIMS"]),
 
                     RespondedAppeals = Convert.ToInt32(
-                        reader["RESPONDENT_APPEALS"])
+                        reader["RESPONDENT_APPEALS"]),
+
+                    // The first-instance procedure returns the office key on EVERY row,
+                    // and the court ID for @BY_COURT = 1 (NULL for office totals).
+                    RegionalOfficeKeyCode = reader["REGIONAL_OFFICE_KEY_CODE"].ToString()
+                                            ?? string.Empty,
+                    CourtId = reader["COURT_ID"] == DBNull.Value
+                        ? null
+                        : Convert.ToInt32(reader["COURT_ID"])
                 };
 
                 result.Add(item);
@@ -128,6 +162,8 @@ namespace CmsApi.Repositories.Implementations
                 var item = new AppealResponse
                 {
                     RegionalOfficeName = reader["REGIONAL_OFFICE_NAME"].ToString() ?? string.Empty,
+                    RegionalOfficeKeyCode = ReadOfficeCode(reader),
+                    CourtId = ReadCourtId(reader),
 
                     CourtName = reader["COURT_NAME"].ToString()
                                 ?? string.Empty,
@@ -189,6 +225,8 @@ namespace CmsApi.Repositories.Implementations
                 var item = new CassasionResponse
                 {
                     RegionalOfficeName = reader["REGIONAL_OFFICE_NAME"].ToString() ?? string.Empty,
+                    RegionalOfficeKeyCode = ReadOfficeCode(reader),
+                    CourtId = ReadCourtId(reader),
 
                     CourtName = reader["COURT_NAME"].ToString()
                                 ?? string.Empty,
@@ -250,6 +288,8 @@ namespace CmsApi.Repositories.Implementations
                 var item = new MeetingResponse
                 {
                     RegionalOfficeName = reader["REGIONAL_OFFICE_NAME"].ToString() ?? string.Empty,
+                    RegionalOfficeKeyCode = ReadOfficeCode(reader),
+                    CourtId = ReadCourtId(reader),
 
                     CourtName = reader["COURT_NAME"].ToString()
                                 ?? string.Empty,

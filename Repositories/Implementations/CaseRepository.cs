@@ -29,7 +29,8 @@ namespace CmsApi.Repositories.Implementations
         }
 
         public async Task<PagedResult<CaseListDto>> GetCasesAsync(
-    CaseListRequestDto request)
+    CaseListRequestDto request,
+    string? officeKeyCode)
         {
             var result = new PagedResult<CaseListDto>
             {
@@ -146,6 +147,16 @@ namespace CmsApi.Repositories.Implementations
                     (object?)request.CourtLevelId ??
                     DBNull.Value;
 
+            // Server-derived RO filter. NULL is allowed only for Admin/RO_00.
+            cmd.Parameters
+                .Add(
+                    "@OFFICE_KEY_CODE",
+                    SqlDbType.VarChar,
+                    10)
+                .Value =
+                    (object?)officeKeyCode ??
+                    DBNull.Value;
+
 
             cmd.Parameters
                 .Add(
@@ -258,6 +269,57 @@ namespace CmsApi.Repositories.Implementations
             }
 
 
+            return result;
+        }
+
+        // Returns false for unknown case IDs and for cases outside the user's RO.
+        // Used by case detail, PDF, case notifications and notification authorization.
+        public async Task<bool> CanAccessCaseAsync(long caseId, string? officeKeyCode)
+        {
+            await using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+            await using var cmd = new SqlCommand(@"
+                SELECT CASE WHEN EXISTS (
+                    SELECT 1 FROM dbo.TBL_CASES C
+                    WHERE C.ID = @CASE_ID
+                      AND (@OFFICE_KEY_CODE IS NULL OR EXISTS (
+                          SELECT 1 FROM dbo.TBL_CASE_ANALYSIS_RESULT CAR
+                          WHERE CAR.CASE_ID = C.ID
+                            AND CAR.OFFICE_KEY_CODE = @OFFICE_KEY_CODE
+                      ))
+                ) THEN 1 ELSE 0 END", connection);
+            cmd.Parameters.Add("@CASE_ID", SqlDbType.BigInt).Value = caseId;
+            cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value =
+                (object?)officeKeyCode ?? DBNull.Value;
+            return Convert.ToInt32(await cmd.ExecuteScalarAsync()) == 1;
+        }
+
+        // Batch check for case references inside case/notification details.
+        public async Task<HashSet<long>> GetAccessibleCaseIdsAsync(
+            IEnumerable<long> caseIds, string officeKeyCode)
+        {
+            var ids = caseIds.Distinct().Where(id => id > 0).ToArray();
+            if (ids.Length == 0) return new HashSet<long>();
+
+            await using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+            await using var cmd = new SqlCommand(@"
+                SELECT DISTINCT C.ID
+                FROM dbo.TBL_CASES C
+                WHERE C.ID IN (
+                    SELECT TRY_CONVERT(BIGINT, value)
+                    FROM STRING_SPLIT(@CASE_IDS, ',')
+                )
+                AND EXISTS (
+                    SELECT 1 FROM dbo.TBL_CASE_ANALYSIS_RESULT CAR
+                    WHERE CAR.CASE_ID = C.ID
+                      AND CAR.OFFICE_KEY_CODE = @OFFICE_KEY_CODE
+                )", connection);
+            cmd.Parameters.Add("@CASE_IDS", SqlDbType.NVarChar, -1).Value = string.Join(",", ids);
+            cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
+            var result = new HashSet<long>();
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync()) result.Add(reader.GetInt64(0));
             return result;
         }
 
@@ -588,7 +650,7 @@ namespace CmsApi.Repositories.Implementations
             }
         }
 
-        public async Task<CaseStatisticDto?> CaseStatisticAsync()
+        public async Task<CaseStatisticDto?> CaseStatisticAsync(string? officeKeyCode = null)
         {
             using var connection = _connectionFactory.CreateMsSqlConnection();
             await connection.OpenAsync();
@@ -600,6 +662,11 @@ namespace CmsApi.Repositories.Implementations
             {
                 CommandType = CommandType.StoredProcedure
             };
+
+            // Admin/RO_00 continue using the existing procedure signature.
+            // Restricted users require @OFFICE_KEY_CODE support in this procedure.
+            if (officeKeyCode is not null)
+                cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
 
             using var reader = await cmd.ExecuteReaderAsync();
 
@@ -685,7 +752,7 @@ namespace CmsApi.Repositories.Implementations
             return result;
         }
 
-        public async Task<List<CaseStatusStatisticDto>> GetCaseStatusStatisticsAsync()
+        public async Task<List<CaseStatusStatisticDto>> GetCaseStatusStatisticsAsync(string? officeKeyCode = null)
         {
 
             var result = new List<CaseStatusStatisticDto>();
@@ -697,6 +764,11 @@ namespace CmsApi.Repositories.Implementations
             {
                 CommandType = CommandType.StoredProcedure
             };
+
+            // Admin/RO_00 continue using the existing procedure signature.
+            // Restricted users require @OFFICE_KEY_CODE support in this procedure.
+            if (officeKeyCode is not null)
+                cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
 
 
             using var reader = await cmd.ExecuteReaderAsync();
@@ -714,7 +786,7 @@ namespace CmsApi.Repositories.Implementations
             return result;
         }
 
-        public async Task<List<CourtLevelStatisticDto>> GetCourtLevelCaseStatisticsAsync(CourtLevelStatisticRequestDto request)
+        public async Task<List<CourtLevelStatisticDto>> GetCourtLevelCaseStatisticsAsync(CourtLevelStatisticRequestDto request, string? officeKeyCode = null)
         {
             var result = new List<CourtLevelStatisticDto>();
 
@@ -725,6 +797,11 @@ namespace CmsApi.Repositories.Implementations
             {
                 CommandType = CommandType.StoredProcedure
             };
+
+            // Admin/RO_00 continue using the existing procedure signature.
+            // Restricted users require @OFFICE_KEY_CODE support in this procedure.
+            if (officeKeyCode is not null)
+                cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
 
             cmd.Parameters.AddWithValue(
                  "@CASE_STATUS_ID",
@@ -747,7 +824,7 @@ namespace CmsApi.Repositories.Implementations
             return result;
         }
 
-        public async Task<List<GetCaseStatisticsByCourtDto>> GetCaseStatisticsByCourtAsync(GetCaseStatisticsByCourtRequestDto request)
+        public async Task<List<GetCaseStatisticsByCourtDto>> GetCaseStatisticsByCourtAsync(GetCaseStatisticsByCourtRequestDto request, string? officeKeyCode = null)
         {
 
             var result = new List<GetCaseStatisticsByCourtDto>();
@@ -759,6 +836,11 @@ namespace CmsApi.Repositories.Implementations
             {
                 CommandType = CommandType.StoredProcedure
             };
+
+            // Admin/RO_00 continue using the existing procedure signature.
+            // Restricted users require @OFFICE_KEY_CODE support in this procedure.
+            if (officeKeyCode is not null)
+                cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
 
             cmd.Parameters.AddWithValue(
                  "@CASE_STATUS_ID",
@@ -789,7 +871,7 @@ namespace CmsApi.Repositories.Implementations
 
 
         public async Task<List<CaseTotalByYearStatisticDto>> GetCaseTotalByYearStatisticsAsync(
-    CaseTotalByYearStatisticRequestDto request)
+    CaseTotalByYearStatisticRequestDto request, string? officeKeyCode = null)
         {
             var result = new List<CaseTotalByYearStatisticDto>();
 
@@ -800,6 +882,11 @@ namespace CmsApi.Repositories.Implementations
             {
                 CommandType = CommandType.StoredProcedure
             };
+
+            // Admin/RO_00 continue using the existing procedure signature.
+            // Restricted users require @OFFICE_KEY_CODE support in this procedure.
+            if (officeKeyCode is not null)
+                cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
 
             cmd.Parameters.AddWithValue("@Year",
                 request.Year == 0 ? DBNull.Value : request.Year);

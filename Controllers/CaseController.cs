@@ -2,6 +2,7 @@ using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.CaseDtos;
 using CmsApi.Repositories.Interfaces;
 using CmsApi.Services.Interfaces;
+using CmsApi.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -45,19 +46,26 @@ namespace CmsApi.Controllers
             var user =
                 await _userRepository.GetByIdAsync(userId);
 
+            if (user == null)
+            {
+                return NotFound(
+                    ApiResponse<object>.Fail(
+                        "User not found"));
+            }
+
+            if (!user.IsActive)
+            {
+                return Unauthorized(
+                    ApiResponse<object>.Fail(
+                        "Account is inactive"));
+            }
+
             if (user.LockoutUntil.HasValue &&
                 user.LockoutUntil.Value > DateTime.Now)
             {
                 return Unauthorized(
                     ApiResponse<object>.Fail(
                         "Account is temporarily locked"));
-            }
-
-            if (user == null)
-            {
-                return NotFound(
-                    ApiResponse<object>.Fail(
-                        "User not found"));
             }
 
             if (user.IsPassChangeRequired)
@@ -68,8 +76,31 @@ namespace CmsApi.Controllers
                         "Password change is required"));
             }
 
-            var result =
-                await _caseRepository.GetCasesAsync(request);
+            // Apply RO access on the server, never from the request body.
+            // RoleId = 1 (Admin) and RO_00 can see all cases.
+            // Every other user must have an assigned office.
+            var isAdmin = user.RoleId == 1;
+            var userOffice = user.OfficeKeyCode?.Trim();
+            var isHeadOffice = string.Equals(
+                userOffice,
+                "RO_00",
+                StringComparison.OrdinalIgnoreCase);
+
+            if (!isAdmin && !isHeadOffice &&
+                string.IsNullOrWhiteSpace(userOffice))
+            {
+                return StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    ApiResponse<object>.Fail(
+                        "No regional office assigned"));
+            }
+
+            string? effectiveOfficeKeyCode =
+                isAdmin || isHeadOffice ? null : userOffice;
+
+            var result = await _caseRepository.GetCasesAsync(
+                request,
+                effectiveOfficeKeyCode);
 
             return Ok(
                 ApiResponse<object>.Ok(result));
@@ -79,45 +110,11 @@ namespace CmsApi.Controllers
         [HttpGet("statistics")]
         public async Task<IActionResult> GetCaseStatistics()
         {
-            var userIdClaim =
-               User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var scope = await RegionalOfficeScope.ResolveAsync(User, _userRepository);
+            if (!scope.Allowed)
+                return StatusCode(scope.ErrorStatus, ApiResponse<object>.Fail(scope.ErrorMessage ?? "Access denied"));
 
-            if (string.IsNullOrEmpty(userIdClaim) ||
-                !int.TryParse(userIdClaim, out var userId))
-            {
-                return Unauthorized(
-                    ApiResponse<object>.Fail(
-                        "User not authenticated"));
-            }
-
-            var user =
-                await _userRepository.GetByIdAsync(userId);
-
-            if (user == null)
-            {
-                return NotFound(
-                    ApiResponse<object>.Fail(
-                        "User not found"));
-            }
-
-            if (user.LockoutUntil.HasValue &&
-              user.LockoutUntil.Value > DateTime.Now)
-            {
-                return Unauthorized(
-                    ApiResponse<object>.Fail(
-                        "Account is temporarily locked"));
-            }
-
-
-            if (user.IsPassChangeRequired)
-            {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden,
-                    ApiResponse<object>.Fail(
-                        "Password change is required"));
-            }
-
-            var result = await _caseRepository.CaseStatisticAsync();
+            var result = await _caseRepository.CaseStatisticAsync(scope.OfficeKeyCode);
 
             return Ok(ApiResponse<object>.Ok(result));
         }
@@ -125,42 +122,12 @@ namespace CmsApi.Controllers
         [HttpGet("detail")]
         public async Task<IActionResult> GetCaseDetail([FromQuery] long caseId)
         {
-            var userIdClaim =
-               User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userIdClaim) ||
-                !int.TryParse(userIdClaim, out var userId))
-            {
-                return Unauthorized(
-                    ApiResponse<object>.Fail(
-                        "User not authenticated"));
-            }
-
-            var user =
-                await _userRepository.GetByIdAsync(userId);
-
-            if (user == null)
-            {
-                return NotFound(
-                    ApiResponse<object>.Fail(
-                        "User not found"));
-            }
-
-            if (user.LockoutUntil.HasValue &&
-              user.LockoutUntil.Value > DateTime.Now)
-            {
-                return Unauthorized(
-                    ApiResponse<object>.Fail(
-                        "Account is temporarily locked"));
-            }
-
-            if (user.IsPassChangeRequired)
-            {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden,
-                    ApiResponse<object>.Fail(
-                        "Password change is required"));
-            }
+            var scope = await RegionalOfficeScope.ResolveAsync(User, _userRepository);
+            if (!scope.Allowed)
+                return StatusCode(scope.ErrorStatus, ApiResponse<object>.Fail(scope.ErrorMessage ?? "Access denied"));
+            // Return 404 rather than reveal whether another office's case exists.
+            if (!await _caseRepository.CanAccessCaseAsync(caseId, scope.OfficeKeyCode))
+                return NotFound(ApiResponse<object>.Fail("Case not found"));
 
             var result = await _caseRepository.GetCaseAsync(caseId);
 
@@ -172,6 +139,24 @@ namespace CmsApi.Controllers
                         StatusCodes.Status404NotFound));
             }
 
+            if (scope.OfficeKeyCode is not null)
+            {
+                // Prevent cross-RO case references in the nested detail response.
+                var relatedIds = (result.RelatedCases ?? new List<CaseListDto>()).Select(x => x.Id)
+                    .Concat((result.CaseHistories ?? new List<CaseHistoryDto>()).Select(x => x.CaseId))
+                    .Concat((result.Appeals ?? new List<CaseAppealDto>()).Where(x => x.CaseId.HasValue)
+                        .Select(x => (long)x.CaseId!.Value));
+                var allowedIds = await _caseRepository.GetAccessibleCaseIdsAsync(
+                    relatedIds, scope.OfficeKeyCode);
+                if (result.RelatedCases is not null)
+                    result.RelatedCases = result.RelatedCases.Where(x => allowedIds.Contains(x.Id)).ToList();
+                if (result.CaseHistories is not null)
+                    result.CaseHistories = result.CaseHistories.Where(x => allowedIds.Contains(x.CaseId)).ToList();
+                if (result.Appeals is not null)
+                    result.Appeals = result.Appeals.Where(x => x.CaseId.HasValue &&
+                        allowedIds.Contains(x.CaseId.Value)).ToList();
+            }
+
             return Ok(ApiResponse<CaseDetailDto>.Ok(result));
 
         }
@@ -179,42 +164,11 @@ namespace CmsApi.Controllers
         [HttpGet("case-new-notifications")]
         public async Task<IActionResult> GetCaseNewNotifications([FromQuery] long caseId)
         {
-            var userIdClaim =
-               User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userIdClaim) ||
-                !int.TryParse(userIdClaim, out var userId))
-            {
-                return Unauthorized(
-                    ApiResponse<object>.Fail(
-                        "User not authenticated"));
-            }
-
-            var user =
-                await _userRepository.GetByIdAsync(userId);
-
-            if (user == null)
-            {
-                return NotFound(
-                    ApiResponse<object>.Fail(
-                        "User not found"));
-            }
-
-            if (user.LockoutUntil.HasValue &&
-              user.LockoutUntil.Value > DateTime.Now)
-            {
-                return Unauthorized(
-                    ApiResponse<object>.Fail(
-                        "Account is temporarily locked"));
-            }
-
-            if (user.IsPassChangeRequired)
-            {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden,
-                    ApiResponse<object>.Fail(
-                        "Password change is required"));
-            }
+            var scope = await RegionalOfficeScope.ResolveAsync(User, _userRepository);
+            if (!scope.Allowed)
+                return StatusCode(scope.ErrorStatus, ApiResponse<object>.Fail(scope.ErrorMessage ?? "Access denied"));
+            if (!await _caseRepository.CanAccessCaseAsync(caseId, scope.OfficeKeyCode))
+                return NotFound(ApiResponse<object>.Fail("Case not found"));
 
             var result = await _caseRepository.GetCaseNewNotificationsAsync(caseId);
 
@@ -273,6 +227,15 @@ namespace CmsApi.Controllers
                         "Password change is required"));
             }
 
+            // The source archives do not expose a verified attachmentId -> CASE_ID relation.
+            // Fail closed for region-limited users rather than allow arbitrary attachment IDs.
+            var scope = await RegionalOfficeScope.ResolveAsync(User, _userRepository);
+            if (!scope.Allowed)
+                return StatusCode(scope.ErrorStatus, ApiResponse<object>.Fail(scope.ErrorMessage ?? "Access denied"));
+            if (scope.OfficeKeyCode is not null)
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    ApiResponse<object>.Fail("Attachment access needs case ownership verification"));
+
             var result = await _documentService.GetDocument(attachmentId);
 
             return File(result, "application/pdf", "document.pdf");
@@ -328,6 +291,12 @@ namespace CmsApi.Controllers
         [HttpGet("{caseId:long}/pdf")]
         public async Task<IActionResult> GetCasePdf(long caseId)
         {
+            var scope = await RegionalOfficeScope.ResolveAsync(User, _userRepository);
+            if (!scope.Allowed)
+                return StatusCode(scope.ErrorStatus, ApiResponse<object>.Fail(scope.ErrorMessage ?? "Access denied"));
+            if (!await _caseRepository.CanAccessCaseAsync(caseId, scope.OfficeKeyCode))
+                return NotFound(ApiResponse<object>.Fail("Case not found"));
+
             var pdf = await _caseService.GetCasePdfAsync(caseId);
 
             if (pdf is null)

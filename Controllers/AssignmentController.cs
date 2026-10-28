@@ -9,7 +9,7 @@ namespace CmsApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Kurator")]
     public class AssignmentController : ControllerBase
     {
         private readonly IAssignmentRepository _assignmentRepository;
