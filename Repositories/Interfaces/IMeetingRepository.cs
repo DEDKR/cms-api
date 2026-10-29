@@ -8,6 +8,8 @@ namespace CmsApi.Repositories.Interfaces
         Task<PagedResult<MeetingListItemDto>> GetMeetingsAsync(
             MeetingRequestDto meetingRequestDto, string? officeKeyCode);
 
+        Task<List<MeetingListItemDto>> GetByCaseIdAsync(long caseId, string? officeKeyCode);
+
         Task<bool> CanAccessMeetingAsync(long meetingId, string? officeKeyCode);
 
         Task<MeetingDetailDto> MeetingDetail(long meetingId);

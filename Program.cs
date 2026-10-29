@@ -64,6 +64,7 @@ namespace CmsApi
 
             // register Assignment repository
             builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
+            builder.Services.AddScoped<IMeetingParticipationRepository, MeetingParticipationRepository>();
 
             // register CasePdfGenerator service
             builder.Services.AddScoped<ICasePdfGenerator, CasePdfGenerator>();

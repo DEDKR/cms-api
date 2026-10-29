@@ -3,11 +3,9 @@ using CmsApi.Repositories.Interfaces;
 
 namespace CmsApi.Security
 {
-    /// <summary>
-    /// Server-only regional scope. Do not accept officeKeyCode from request payloads.
-    /// A null OfficeKeyCode is valid ONLY when Allowed=true (Admin / RO_00).
-    /// </summary>
-    public sealed record RegionalOfficeScope(bool Allowed, string? OfficeKeyCode,
+    // OfficeKeyCode == null is "all offices" ONLY when Allowed == true.
+    public sealed record RegionalOfficeScope(
+        bool Allowed, string? OfficeKeyCode,
         int ErrorStatus = 403, string? ErrorMessage = null)
     {
         public static async Task<RegionalOfficeScope> ResolveAsync(
@@ -32,7 +30,6 @@ namespace CmsApi.Security
                 return new(true, null);
             if (string.IsNullOrWhiteSpace(office))
                 return new(false, null, 403, "No regional office assigned");
-
             return new(true, office);
         }
     }

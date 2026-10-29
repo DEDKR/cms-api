@@ -1,13 +1,18 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace CmsApi.DTOs.AssignmentDtos
 {
+    // Cross-product: each meeting receives each selected user.
     public class SetMeetToUserRequestDto
     {
-        [Range(1, long.MaxValue)]
-        public long UserId { get; set; }
+        [Required, MinLength(1)]
+        public List<long> MeetIds { get; set; } = new();
 
-        [Range(1, long.MaxValue)]
-        public long MeetId { get; set; }
+        [Required, MinLength(1)]
+        public List<long> UserIds { get; set; } = new();
+
+        [StringLength(1500)]
+        public string? AssignmentNote { get; set; }
     }
 }

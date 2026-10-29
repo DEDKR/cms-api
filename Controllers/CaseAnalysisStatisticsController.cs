@@ -8,7 +8,7 @@ namespace CmsApi.Controllers;
 
 [ApiController]
 [Route("api/Admin/analysis-statistics")]
-//[Authorize(Roles = "Admin")]
+//[Authorize(Roles = "Admin,Kurator")]
 public sealed class CaseAnalysisStatisticsController : ControllerBase
 {
     private readonly ICaseAnalysisStatisticsRepository _repository;
