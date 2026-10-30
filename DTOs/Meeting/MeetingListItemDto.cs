@@ -14,7 +14,10 @@
         public string? ParticipationRole { get; set; }
 
         // Admin paneldə mövcud iclas təyinatını göstərmək üçün.
-        public string? AssignedUsers { get; set; }
-        public string? AssignedUserIds { get; set; }
+        public string? AttentStatus { get; set; }
+        public DateTime? AttentDate { get; set; }
+        public string? ResponsibleUser { get; set; }
+
+
     }
 }

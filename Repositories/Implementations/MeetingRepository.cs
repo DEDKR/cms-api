@@ -55,8 +55,9 @@ namespace CmsApi.Repositories.Implementations
                     Judge = reader.SafeGet<string>("JUDGE_NAME"),
                     MeetingStatus = reader.SafeGet<string>("MEETING_STATUS"),
                     ParticipationRole = reader.SafeGet<string?>("PARTY_TYPE"),
-                    AssignedUsers = reader.SafeGet<string?>("ASSIGNED_USERS"),
-                    AssignedUserIds = reader.SafeGet<string?>("ASSIGNED_USER_IDS"),
+                    AttentStatus = reader.SafeGet<string?>("ATTEND_STATUS"),
+                    AttentDate = reader.SafeGet<DateTime?>("ATTEND_DATE"),
+                    ResponsibleUser = reader.SafeGet<string?>("RESPONSIBLE_USER")
 
                 });
 
@@ -75,54 +76,27 @@ namespace CmsApi.Repositories.Implementations
 
         // Query is bound to the REAL case ID. Meeting CASE_NO is matched to the
         // case's CASE_NO; region is checked on the linked meeting CASE_ID as well.
-        public async Task<List<MeetingListItemDto>> GetByCaseIdAsync(long caseId, string? officeKeyCode)
+        public async Task<List<MeetingListItemDto>> GetByCaseIdAsync(
+            long caseId,
+            string? officeKeyCode)
         {
             var result = new List<MeetingListItemDto>();
+
             using var connection = _connectionFactory.CreateMsSqlConnection();
             await connection.OpenAsync();
-            using var cmd = new SqlCommand(@"
-                SELECT M.ID, M.MEETING_IDS, M.CASE_NO, M.MEETING_DATE,
-                       MT.NAME AS MEETING_TYPE, DC.COURT_NAME, M.HALL,
-                       J.JUDGE_NAME, MS.NAME AS MEETING_STATUS, M.PARTY_TYPE,
-                       A.ASSIGNED_USERS, A.ASSIGNED_USER_IDS
-                FROM dbo.TBL_CASES C
-                JOIN dbo.TBL_MEETINGS M ON M.CASE_NO = C.CASE_NO
-                LEFT JOIN dbo.DIC_COURTS DC ON DC.COURT_ID = M.COURT_ID
-                LEFT JOIN dbo.DIC_MEETING_TYPE MT ON MT.ID = M.MEETING_TYPE_ID
-                LEFT JOIN dbo.DIC_MEETING_STATUSES MS ON MS.ID = M.MEETING_STATUS_ID
-                OUTER APPLY (
-                    SELECT TOP(1) TJ.JUDGE_NAME
-                    FROM dbo.TBL_JUDGES TJ WHERE TJ.JUDGE_ID = M.JUDGE_ID
-                    ORDER BY CASE WHEN TJ.COURT_ID = M.COURT_ID THEN 0 ELSE 1 END,
-                             TJ.COURT_ID, TJ.JUDGE_NAME
-                ) J
-                OUTER APPLY (
-                    SELECT STRING_AGG(X.FULL_NAME, N', ') AS ASSIGNED_USERS,
-                           STRING_AGG(CONVERT(NVARCHAR(MAX), X.USER_ID), N',') AS ASSIGNED_USER_IDS
-                    FROM (
-                        SELECT DISTINCT MA.USER_ID,
-                               LTRIM(RTRIM(CONCAT(ISNULL(U.FIRST_NAME,N''),N' ',ISNULL(U.LAST_NAME,N'')))) AS FULL_NAME
-                        FROM dbo.TBL_MEETING_ATTENDS MA
-                        LEFT JOIN dbo.TBL_USERS U ON U.USER_ID = MA.USER_ID
-                        WHERE MA.MEETING_ID = M.ID
-                    ) X
-                ) A
-                WHERE C.ID = @CaseId
-                  AND (@Office IS NULL OR
-                       EXISTS (SELECT 1 FROM dbo.TBL_CASE_ANALYSIS_RESULT CAR
-                               WHERE CAR.CASE_ID = C.ID AND CAR.OFFICE_KEY_CODE = @Office))
-                  AND (@Office IS NULL OR
-                       EXISTS (SELECT 1 FROM dbo.TBL_CASE_ANALYSIS_RESULT CAR
-                               WHERE CAR.CASE_ID = M.CASE_ID AND CAR.OFFICE_KEY_CODE = @Office)
-                       OR (
-                         NOT EXISTS (SELECT 1 FROM dbo.TBL_CASES MC WHERE MC.ID = M.CASE_ID)
-                         AND C.COURT_ID = M.COURT_ID
-                       ))
-                ORDER BY M.MEETING_DATE DESC, M.ID DESC", connection);
+
+            using var cmd = new SqlCommand("dbo.P_GET_CASE_MEETINGS", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
             cmd.Parameters.Add("@CaseId", SqlDbType.BigInt).Value = caseId;
-            cmd.Parameters.Add("@Office", SqlDbType.VarChar, 10).Value =
+
+            cmd.Parameters.Add("@Office", SqlDbType.NVarChar, 100).Value =
                 (object?)officeKeyCode ?? DBNull.Value;
+
             using var reader = await cmd.ExecuteReaderAsync();
+
             while (await reader.ReadAsync())
             {
                 result.Add(new MeetingListItemDto
@@ -137,10 +111,13 @@ namespace CmsApi.Repositories.Implementations
                     Judge = reader.SafeGet<string>("JUDGE_NAME"),
                     MeetingStatus = reader.SafeGet<string>("MEETING_STATUS"),
                     ParticipationRole = reader.SafeGet<string?>("PARTY_TYPE"),
-                    AssignedUsers = reader.SafeGet<string?>("ASSIGNED_USERS"),
-                    AssignedUserIds = reader.SafeGet<string?>("ASSIGNED_USER_IDS")
+
+                    AttentStatus = reader.SafeGet<string?>("ATTEND_STATUS"),
+                    AttentDate = reader.SafeGet<DateTime?>("ATTEND_DATE"),
+                    ResponsibleUser = reader.SafeGet<string?>("RESPONSIBLE_USER")
                 });
             }
+
             return result;
         }
 

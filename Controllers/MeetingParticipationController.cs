@@ -5,6 +5,7 @@ using CmsApi.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using System.Security.Claims;
 
 namespace CmsApi.Controllers
 {
@@ -30,17 +31,48 @@ namespace CmsApi.Controllers
             return perm.Allowed ? perm : null;
         }
 
+        // Resolve the logged-in user's actual roles/permissions on the server.
+        // Profile values are display-only and do NOT grant regional access.
         [HttpGet("participation/capabilities")]
         public async Task<IActionResult> Capabilities()
         {
             var permission = await GetPermissionAsync();
             if (permission is null) return Forbid();
-            return Ok(ApiResponse<object>.Ok(new {
-                CanManageOthers = permission.CanManageOthers,
-                permission.CanSeeAll, permission.OfficeKeyCode, permission.Role,
+
+            // Read values already present in JWT when available. The stored procedure
+            // falls back to current TBL_USERS values for missing/older claims.
+            var officeClaim = GetClaimValue("officeKeyCode", "OfficeKeyCode",
+                "OFFICE_KEY_CODE", "regionalOfficeId", "REGIONAL_OFFICE_ID");
+            var positionClaim = GetClaimInt("positionId", "PositionId", "POSITION_ID", "position_id");
+            var departmentClaim = GetClaimInt("departmentId", "DepartmentId", "DEPARTMENT_ID", "department_id");
+
+            var profile = await _participation.GetCapabilityLabelsAsync(
+                permission.UserId, officeClaim, positionClaim, departmentClaim);
+
+            return Ok(ApiResponse<object>.Ok(new
+            {
+                permission.CanManageOthers,
+                permission.CanSeeAll,
+                profile.OfficeKeyCode,
+                profile.Position,
+                profile.Department,
+                permission.Role,
                 permission.UserId
             }));
         }
+
+        private string? GetClaimValue(params string[] names)
+        {
+            foreach (var name in names)
+            {
+                var value = User.FindFirst(name)?.Value;
+                if (!string.IsNullOrWhiteSpace(value)) return value.Trim();
+            }
+            return null;
+        }
+
+        private int? GetClaimInt(params string[] names) =>
+            int.TryParse(GetClaimValue(names), out var value) && value > 0 ? value : null;
 
         [HttpGet("participation/eligible-users")]
         public async Task<IActionResult> EligibleUsers([FromQuery] string? search = null)
