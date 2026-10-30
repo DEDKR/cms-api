@@ -12,6 +12,61 @@ namespace CmsApi.Repositories.Implementations
         private readonly IDbConnectionFactory _factory;
         public MeetingParticipationRepository(IDbConnectionFactory factory) => _factory = factory;
 
+        // Get display labels in one stored-procedure call. These values do not
+        // influence CanManageOthers, CanSeeAll or meeting authorization.
+        public async Task<MeetingCapabilityProfileDto> GetCapabilityLabelsAsync(
+            long userId, string? officeClaim, int? positionClaim, int? departmentClaim)
+        {
+            using var connection = _factory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+            using var cmd = new SqlCommand("dbo.P_GET_MEETING_CAPABILITY_LABELS", connection)
+            {
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 30
+            };
+            cmd.Parameters.Add("@USER_ID", SqlDbType.Int).Value = checked((int)userId);
+            cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value =
+                (object?)officeClaim ?? DBNull.Value;
+            cmd.Parameters.Add("@POSITION_ID", SqlDbType.Int).Value =
+                (object?)positionClaim ?? DBNull.Value;
+            cmd.Parameters.Add("@DEPARTMENT_ID", SqlDbType.Int).Value =
+                (object?)departmentClaim ?? DBNull.Value;
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
+                throw new InvalidOperationException("Capability profile not found for authenticated user.");
+
+            string? ReadString(string column) => reader[column] == DBNull.Value
+                ? null : Convert.ToString(reader[column]);
+            int? ReadInt(string column) => reader[column] == DBNull.Value
+                ? null : Convert.ToInt32(reader[column]);
+
+            var officeValue = ReadString("OFFICE_VALUE");
+            var positionValue = ReadInt("POSITION_VALUE");
+            var departmentValue = ReadInt("DEPARTMENT_VALUE");
+            return new MeetingCapabilityProfileDto
+            {
+                OfficeKeyCode = string.IsNullOrWhiteSpace(officeValue) ? null :
+                    new ParticipationOptionDto<string>
+                    {
+                        Value = officeValue,
+                        Label = ReadString("OFFICE_LABEL")
+                    },
+                Position = positionValue.HasValue ?
+                    new ParticipationOptionDto<int>
+                    {
+                        Value = positionValue.Value,
+                        Label = ReadString("POSITION_LABEL")
+                    } : null,
+                Department = departmentValue.HasValue ?
+                    new ParticipationOptionDto<int>
+                    {
+                        Value = departmentValue.Value,
+                        Label = ReadString("DEPARTMENT_LABEL")
+                    } : null
+            };
+        }
+
         public async Task<List<MeetingParticipationDto>> GetAsync(
             long meetingId, long requestingUserId, string? officeKeyCode, bool canManageOthers)
         {
