@@ -254,7 +254,7 @@ namespace CmsApi.Controllers
 
         }
 
-        [Authorize(Roles = "Admin,Kurator")]
+        [Authorize]
         [HttpPost("analize-case")]
         public async Task<IActionResult> UpsertCaseAnalysisResult([FromBody] CaseAnalysisResultRequestDto payload)
         {
