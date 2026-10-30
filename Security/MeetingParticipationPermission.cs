@@ -31,7 +31,7 @@ namespace CmsApi.Security
             if (role.Equals("Kurator", StringComparison.OrdinalIgnoreCase))
                 return new(true, id, true, false, office, role);
 
-            if (role.Equals("İştirakçı", StringComparison.OrdinalIgnoreCase))
+            if (role.Equals("İstifadəçi", StringComparison.OrdinalIgnoreCase))
                 return new(true, id, false, false, office, role);
 
             return new(false, id, false, false, office, role);
