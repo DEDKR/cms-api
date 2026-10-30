@@ -423,7 +423,12 @@ namespace CmsApi.Repositories.Implementations
                     Judge = reader["JUDGE"]?.ToString(),
                     MeetingType = reader["MEETING_TYPE"]?.ToString(),
                     MeetingDate = reader["MEETING_DATE"] as DateTime?,
-                    Status = reader.SafeGet<string>("STATUS")
+                    Status = reader.SafeGet<string>("STATUS"),
+                    AttendStatus = reader.SafeGet<string>("ATTEND_STATUS"),
+                    AttandDate = reader.SafeGet<DateTime?>("ATTEND_DATE"),
+                    ResponsibleUser = reader.SafeGet<string>("RESPONSIBLE_USER")
+
+
                 });
             }
 
