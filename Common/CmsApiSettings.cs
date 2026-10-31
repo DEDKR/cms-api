@@ -9,5 +9,11 @@
 
         public string NotificationReadApi { get; set; }
 
+        public string BorderTokenApi { get; set; } = null!;
+        public string BordersApi { get; set; } = null!;
+        public string BordersApiLegacy { get; set; } = null!;
+        public string BorderClientId { get; set; } = null!;
+        public string BorderClientSecret { get; set; } = null!;
+
     }
 }

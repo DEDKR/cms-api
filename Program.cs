@@ -1,15 +1,18 @@
 
 using CmsApi.Common;
+using CmsApi.Controllers;
 using CmsApi.DB;
 using CmsApi.Extensions;
 using CmsApi.Http.Handlers.Implementations;
 using CmsApi.Http.Handlers.Interfaces;
+using CmsApi.Middleware;
 using CmsApi.Repositories.Implementations;
 using CmsApi.Repositories.Interfaces;
 using CmsApi.Services.Implementations;
 using CmsApi.Services.Interfaces;
 using CmsApi.Services.Interfaces.CmsApi.Services.Interfaces;
 using Microsoft.Data.SqlClient;
+using QuestPDF.Infrastructure;
 using System;
 using System.Data;
 
@@ -21,6 +24,8 @@ namespace CmsApi
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            QuestPDF.Settings.License = LicenseType.Evaluation; // QuestPDF license 
+
             builder.Services.AddScoped<IDbConnectionFactory, DbConnectionFactory>();
             builder.Services.AddScoped<ICaseRepository, CaseRepository>();
             builder.Services.AddScoped<IReferenceDataRepository, ReferenceDataRepository>();
@@ -30,16 +35,42 @@ namespace CmsApi
             builder.Services.AddScoped<ICmsLoginService, CmsLoginService>();
             builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services.AddHttpClient<ICmsLoginHttpHandler, CmsLoginHttpHandler>();
-            builder.Services.AddHttpClient<ICmsHttpHandler, CmsHttpHandler>();
+            builder.Services
+    .AddHttpClient<ICmsHttpHandler, CmsHttpHandler>()
+    .ConfigurePrimaryHttpMessageHandler(() =>
+        new HttpClientHandler
+        {
+            UseProxy = false
+        });
             builder.Services.AddScoped<IMeetingRepository, MeetingRepository>();
             builder.Services.AddScoped<IDocumentService, DocumentService>();
             builder.Services.AddScoped<ICaseService, CaseService>();
             builder.Services.AddScoped<IDashboardService, DashboardService>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<ICaseAnalysisStatisticsRepository, CaseAnalysisStatisticsRepository>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<ITokenRepository, TokenRepository>();
             builder.Services.AddScoped<IPasswordService, PasswordService>();
+            builder.Services.AddScoped<IPasswordPolicyService, PasswordPolicyService>();
             builder.Services.AddScoped<ITokenService, TokenService>();
+
+            // register Complaint service and repository
+            builder.Services.AddScoped<IComplaintService, ComplaintService>();
+            builder.Services.AddScoped<IComplaintRepository, ComplaintRepository>();
+
+            // register Pretense service and repository
+            builder.Services.AddScoped<IPretenseService, PretenseService>();
+            builder.Services.AddScoped<IPretenseRepository, PretenseRepository>();
+
+            // register Assignment repository
+            builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
+            builder.Services.AddScoped<IMeetingParticipationRepository, MeetingParticipationRepository>();
+
+            // register CasePdfGenerator service
+            builder.Services.AddScoped<ICasePdfGenerator, CasePdfGenerator>();
+
+            //register Reports repository
+            builder.Services.AddScoped<IReportsRepository, ReportsRepository>();
 
             builder.Services.AddAuthenticationServices(builder.Configuration);
 
@@ -63,15 +94,26 @@ namespace CmsApi
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            // For caching Border token
+            builder.Services.AddMemoryCache();
+
             var app = builder.Build();
 
             app.UseCors(CorsExtensions.CorsPolicyName);
             app.UseSwagger();
-            app.UseSwaggerUI();
+            app.UseSwaggerUI(c =>
+            {
+                c.ConfigObject.AdditionalItems["syntaxHighlight"] = false;
+            });
 
             app.UseHttpsRedirection();
 
             app.UseAuthentication();
+
+            // Content(1)-dəki rate-limit məntiqi: endpoint üzrə sayğac,
+            // limit aşılarsa user/IP üçün bütün API bloklanır.
+            app.UseMiddleware<ApiRateLimitMiddleware>();
+
             app.UseAuthorization();
 
             app.MapControllers();

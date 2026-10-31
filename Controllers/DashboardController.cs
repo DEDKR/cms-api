@@ -1,8 +1,9 @@
-﻿using CmsApi.DTOs.ApiDtos;
+using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.Dashboard;
 using CmsApi.DTOs.Meeting;
 using CmsApi.Repositories.Interfaces;
 using CmsApi.Services.Interfaces;
+using CmsApi.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -28,43 +29,11 @@ namespace CmsApi.Controllers
         [HttpGet("case-status-statistics")]
         public async Task<IActionResult> GetCaseStatusStatistics()
         {
-            var userIdClaim =
-              User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var scope = await RegionalOfficeScope.ResolveAsync(User, _userRepository);
+            if (!scope.Allowed)
+                return StatusCode(scope.ErrorStatus, ApiResponse<object>.Fail(scope.ErrorMessage ?? "Access denied"));
 
-            if (string.IsNullOrEmpty(userIdClaim) ||
-                !int.TryParse(userIdClaim, out var userId))
-            {
-                return Unauthorized(
-                    ApiResponse<object>.Fail(
-                        "User not authenticated"));
-            }
-
-            var user =
-                await _userRepository.GetByIdAsync(userId);
-
-            if (user == null)
-            {
-                return NotFound(
-                    ApiResponse<object>.Fail(
-                        "User not found"));
-            }
-            if (user.LockoutUntil.HasValue &&
-              user.LockoutUntil.Value > DateTime.Now)
-            {
-                return Unauthorized(
-                    ApiResponse<object>.Fail(
-                        "Account is temporarily locked"));
-            }
-            if (user.IsPassChangeRequired)
-            {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden,
-                    ApiResponse<object>.Fail(
-                        "Password change is required"));
-            }
-
-
-            var result = await _dashboardService.GetCaseStatusStatisticsAsync();
+            var result = await _dashboardService.GetCaseStatusStatisticsAsync(scope.OfficeKeyCode);
 
             return Ok(result);
         }
@@ -72,42 +41,11 @@ namespace CmsApi.Controllers
         [HttpPost("court-level-case-statistics")]
         public async Task<IActionResult> GetCourtLevelStatistics([FromBody] CourtLevelStatisticRequestDto request)
         {
-            var userIdClaim =
-              User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var scope = await RegionalOfficeScope.ResolveAsync(User, _userRepository);
+            if (!scope.Allowed)
+                return StatusCode(scope.ErrorStatus, ApiResponse<object>.Fail(scope.ErrorMessage ?? "Access denied"));
 
-            if (string.IsNullOrEmpty(userIdClaim) ||
-                !int.TryParse(userIdClaim, out var userId))
-            {
-                return Unauthorized(
-                    ApiResponse<object>.Fail(
-                        "User not authenticated"));
-            }
-
-            var user =
-                await _userRepository.GetByIdAsync(userId);
-
-            if (user == null)
-            {
-                return NotFound(
-                    ApiResponse<object>.Fail(
-                        "User not found"));
-            }
-            if (user.LockoutUntil.HasValue &&
-              user.LockoutUntil.Value > DateTime.Now)
-            {
-                return Unauthorized(
-                    ApiResponse<object>.Fail(
-                        "Account is temporarily locked"));
-            }
-            if (user.IsPassChangeRequired)
-            {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden,
-                    ApiResponse<object>.Fail(
-                        "Password change is required"));
-            }
-
-            var result = await _dashboardService.GetCourtLevelCaseStatisticsAsync(request);
+            var result = await _dashboardService.GetCourtLevelCaseStatisticsAsync(request, scope.OfficeKeyCode);
 
             return Ok(result);
         }
@@ -115,42 +53,11 @@ namespace CmsApi.Controllers
         [HttpPost("case-statistics-by-court")]
         public async Task<IActionResult> GetCaseStatisticsByCourt([FromBody] GetCaseStatisticsByCourtRequestDto request)
         {
-            var userIdClaim =
-              User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var scope = await RegionalOfficeScope.ResolveAsync(User, _userRepository);
+            if (!scope.Allowed)
+                return StatusCode(scope.ErrorStatus, ApiResponse<object>.Fail(scope.ErrorMessage ?? "Access denied"));
 
-            if (string.IsNullOrEmpty(userIdClaim) ||
-                !int.TryParse(userIdClaim, out var userId))
-            {
-                return Unauthorized(
-                    ApiResponse<object>.Fail(
-                        "User not authenticated"));
-            }
-
-            var user =
-                await _userRepository.GetByIdAsync(userId);
-
-            if (user == null)
-            {
-                return NotFound(
-                    ApiResponse<object>.Fail(
-                        "User not found"));
-            }
-            if (user.LockoutUntil.HasValue &&
-              user.LockoutUntil.Value > DateTime.Now)
-            {
-                return Unauthorized(
-                    ApiResponse<object>.Fail(
-                        "Account is temporarily locked"));
-            }
-            if (user.IsPassChangeRequired)
-            {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden,
-                    ApiResponse<object>.Fail(
-                        "Password change is required"));
-            }
-
-            var result = await _dashboardService.GetCaseStatisticsByCourtAsync(request);
+            var result = await _dashboardService.GetCaseStatisticsByCourtAsync(request, scope.OfficeKeyCode);
 
             return Ok(result);
         }
@@ -159,42 +66,11 @@ namespace CmsApi.Controllers
         [HttpPost("case-total-by-year-statistics")]
         public async Task<IActionResult> GetTotalByYearStatistics([FromBody] CaseTotalByYearStatisticRequestDto caseTotalByYearStatisticRequestDto)
         {
-            var userIdClaim =
-              User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var scope = await RegionalOfficeScope.ResolveAsync(User, _userRepository);
+            if (!scope.Allowed)
+                return StatusCode(scope.ErrorStatus, ApiResponse<object>.Fail(scope.ErrorMessage ?? "Access denied"));
 
-            if (string.IsNullOrEmpty(userIdClaim) ||
-                !int.TryParse(userIdClaim, out var userId))
-            {
-                return Unauthorized(
-                    ApiResponse<object>.Fail(
-                        "User not authenticated"));
-            }
-
-            var user =
-                await _userRepository.GetByIdAsync(userId);
-
-            if (user == null)
-            {
-                return NotFound(
-                    ApiResponse<object>.Fail(
-                        "User not found"));
-            }
-            if (user.LockoutUntil.HasValue &&
-              user.LockoutUntil.Value > DateTime.Now)
-            {
-                return Unauthorized(
-                    ApiResponse<object>.Fail(
-                        "Account is temporarily locked"));
-            }
-            if (user.IsPassChangeRequired)
-            {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden,
-                    ApiResponse<object>.Fail(
-                        "Password change is required"));
-            }
-
-            var result = await _dashboardService.GetCaseTotalByYearStatisticsAsync(caseTotalByYearStatisticRequestDto);
+            var result = await _dashboardService.GetCaseTotalByYearStatisticsAsync(caseTotalByYearStatisticRequestDto, scope.OfficeKeyCode);
 
             return Ok(result);
         }

@@ -1,4 +1,4 @@
-﻿using CmsApi.DB;
+using CmsApi.DB;
 using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.Meeting;
 using CmsApi.ExtensionMethods;
@@ -18,7 +18,7 @@ namespace CmsApi.Repositories.Implementations
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<PagedResult<MeetingListItemDto>> GetMeetingsAsync(MeetingRequestDto meetingRequestDto)
+        public async Task<PagedResult<MeetingListItemDto>> GetMeetingsAsync(MeetingRequestDto meetingRequestDto, string? officeKeyCode)
         {
             var result = new PagedResult<MeetingListItemDto>
             {
@@ -33,7 +33,10 @@ namespace CmsApi.Repositories.Implementations
             using var command = new SqlCommand("P_GET_MEETINGS", connection);
 
             command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.Add("@JsonData", SqlDbType.NVarChar).Value = json;
+            command.Parameters.Add("@JsonData", SqlDbType.NVarChar, -1).Value = json;
+            // NULL is valid ONLY after RegionalOfficeScope has approved Admin / RO_00.
+            command.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value =
+                (object?)officeKeyCode ?? DBNull.Value;
 
 
             using var reader = await command.ExecuteReaderAsync();
@@ -43,7 +46,7 @@ namespace CmsApi.Repositories.Implementations
                 result.Items.Add(new MeetingListItemDto
                 {
                     Id = reader.SafeGet<long>("ID"),
-                    Ids = reader.SafeGet<string>("ID"),
+                    Ids = reader.SafeGet<string?>("MEETING_IDS"),
                     CaseNo = reader.SafeGet<string>("CASE_NO"),
                     MeetingDate = reader.SafeGet<DateTime?>("MEETING_DATE"),
                     MeetingType = reader.SafeGet<string>("MEETING_TYPE"),
@@ -51,7 +54,10 @@ namespace CmsApi.Repositories.Implementations
                     Hall = reader.SafeGet<string>("HALL"),
                     Judge = reader.SafeGet<string>("JUDGE_NAME"),
                     MeetingStatus = reader.SafeGet<string>("MEETING_STATUS"),
-                    ParticipationRole = reader.SafeGet<string>("PARTY_TYPE"),
+                    ParticipationRole = reader.SafeGet<string?>("PARTY_TYPE"),
+                    AttentStatus = reader.SafeGet<string?>("ATTEND_STATUS"),
+                    AttentDate = reader.SafeGet<DateTime?>("ATTEND_DATE"),
+                    ResponsibleUser = reader.SafeGet<string?>("RESPONSIBLE_USER")
 
                 });
 
@@ -66,6 +72,94 @@ namespace CmsApi.Repositories.Implementations
             result.PageSize = meetingRequestDto.PageSize;
 
             return result;
+        }
+
+        // Query is bound to the REAL case ID. Meeting CASE_NO is matched to the
+        // case's CASE_NO; region is checked on the linked meeting CASE_ID as well.
+        public async Task<List<MeetingListItemDto>> GetByCaseIdAsync(
+            long caseId,
+            string? officeKeyCode)
+        {
+            var result = new List<MeetingListItemDto>();
+
+            using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+
+            using var cmd = new SqlCommand("dbo.P_GET_CASE_MEETINGS", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            cmd.Parameters.Add("@CaseId", SqlDbType.BigInt).Value = caseId;
+
+            cmd.Parameters.Add("@Office", SqlDbType.NVarChar, 100).Value =
+                (object?)officeKeyCode ?? DBNull.Value;
+
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                result.Add(new MeetingListItemDto
+                {
+                    Id = reader.SafeGet<long>("ID"),
+                    Ids = reader.SafeGet<string?>("MEETING_IDS"),
+                    CaseNo = reader.SafeGet<string>("CASE_NO"),
+                    MeetingDate = reader.SafeGet<DateTime?>("MEETING_DATE"),
+                    MeetingType = reader.SafeGet<string>("MEETING_TYPE"),
+                    Court = reader.SafeGet<string>("COURT_NAME"),
+                    Hall = reader.SafeGet<string>("HALL"),
+                    Judge = reader.SafeGet<string>("JUDGE_NAME"),
+                    MeetingStatus = reader.SafeGet<string>("MEETING_STATUS"),
+                    ParticipationRole = reader.SafeGet<string?>("PARTY_TYPE"),
+
+                    AttentStatus = reader.SafeGet<string?>("ATTEND_STATUS"),
+                    AttentDate = reader.SafeGet<DateTime?>("ATTEND_DATE"),
+                    ResponsibleUser = reader.SafeGet<string?>("RESPONSIBLE_USER")
+                });
+            }
+
+            return result;
+        }
+
+        // Does not expose meeting details until related case is authorized.
+        // Requires dbo.TBL_MEETINGS.CASE_ID (see SQL preflight).
+        public async Task<bool> CanAccessMeetingAsync(long meetingId, string? officeKeyCode)
+        {
+            using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+
+            using var command = new SqlCommand(@"
+                SELECT CASE WHEN EXISTS (
+                    SELECT 1
+                    FROM dbo.TBL_MEETINGS M
+                    WHERE M.ID = @MEETING_ID
+                      AND (
+                          @OFFICE_KEY_CODE IS NULL
+                          OR EXISTS (
+                              SELECT 1
+                              FROM dbo.TBL_CASE_ANALYSIS_RESULT CAR
+                              WHERE CAR.CASE_ID = M.CASE_ID
+                                AND CAR.OFFICE_KEY_CODE = @OFFICE_KEY_CODE
+                          )
+                          OR (
+                              NOT EXISTS (SELECT 1 FROM dbo.TBL_CASES MC WHERE MC.ID = M.CASE_ID)
+                              AND EXISTS (
+                                  SELECT 1
+                                  FROM dbo.TBL_CASES C
+                                  JOIN dbo.TBL_CASE_ANALYSIS_RESULT CAR ON CAR.CASE_ID = C.ID
+                                  WHERE C.CASE_NO = M.CASE_NO
+                                    AND C.COURT_ID = M.COURT_ID
+                                    AND CAR.OFFICE_KEY_CODE = @OFFICE_KEY_CODE
+                              )
+                          )
+                      )
+                ) THEN 1 ELSE 0 END", connection);
+
+            command.Parameters.Add("@MEETING_ID", SqlDbType.BigInt).Value = meetingId;
+            command.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value =
+                (object?)officeKeyCode ?? DBNull.Value;
+
+            return Convert.ToInt32(await command.ExecuteScalarAsync()) == 1;
         }
 
         public async Task<MeetingDetailDto> MeetingDetail(long meetingId)
@@ -160,6 +254,71 @@ namespace CmsApi.Repositories.Implementations
             return result;
         }
 
-       
+
+        public async Task<MeetingStatisticDto?> MeetingStatisticAsync(string? officeKeyCode)
+        {
+            using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+
+            var result = new MeetingStatisticDto();
+
+            // Birinci resultset
+            using var cmd = new SqlCommand("P_GET_MEET_STATISTICS", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            // Old procedure stays unchanged for Admin / RO_00.
+            // For limited users P_GET_MEET_STATISTICS MUST be upgraded to accept
+            // @OFFICE_KEY_CODE and apply the same EXISTS filter to all result sets.
+            // Otherwise SQL throws rather than leaking global statistics.
+            if (officeKeyCode is not null)
+                cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
+
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                result.TotalMeetings = reader.SafeGet<long>("TotalMeetings");
+                result.CompletedMeetings = reader.SafeGet<long>("CompletedMeetings");
+                result.InProgressMeetings = reader.SafeGet<long>("InProgressMeetings");
+                result.NewMeetingsThisMonth = reader.SafeGet<long>("NewMeetingsThisMonth");
+            }
+
+            // İkinci resultset
+            if (await reader.NextResultAsync())
+            {
+                var years = new Dictionary<int, MeetingYearDto>();
+
+                while (await reader.ReadAsync())
+                {
+                    var year = reader.SafeGet<int>("YEAR");
+
+                    if (!years.TryGetValue(year, out var yearDto))
+                    {
+                        yearDto = new MeetingYearDto
+                        {
+                            Year = year,
+                            TotalCount = reader.SafeGet<int>("YEAR_COUNT"),
+                            Months = new List<MeetingMonthDto>()
+                        };
+
+                        years.Add(year, yearDto);
+                    }
+
+                    yearDto.Months!.Add(new MeetingMonthDto
+                    {
+                        Month = reader.SafeGet<string>("MONTH"),
+                        Count = reader.SafeGet<int>("MONTH_COUNT")
+                    });
+                }
+
+                result.Years = years.Values.ToList();
+            }
+
+            return result;
+        }
+
+
     }
 }

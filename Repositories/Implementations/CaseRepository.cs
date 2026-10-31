@@ -1,7 +1,8 @@
-﻿using CmsApi.DB;
+using CmsApi.DB;
 using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.CaseDtos;
 using CmsApi.DTOs.Dashboard;
+using CmsApi.DTOs.Meeting;
 using CmsApi.Entities;
 using CmsApi.Enums;
 using CmsApi.ExtensionMethods;
@@ -27,99 +28,299 @@ namespace CmsApi.Repositories.Implementations
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<PagedResult<CaseListDto>> GetCasesAsync(CaseListRequestDto request)
+        public async Task<PagedResult<CaseListDto>> GetCasesAsync(
+    CaseListRequestDto request,
+    string? officeKeyCode)
         {
-            try
+            var result = new PagedResult<CaseListDto>
             {
+                PageNumber =
+                    request.PageNumber <= 0
+                        ? 1
+                        : request.PageNumber,
+
+                PageSize =
+                    request.PageSize <= 0 ||
+                    request.PageSize > 10000
+                        ? 10
+                        : request.PageSize
+            };
+
+            using var connection =
+                _connectionFactory.CreateMsSqlConnection();
+
+            await connection.OpenAsync();
 
 
-                var result = new PagedResult<CaseListDto>
-                {
-                    PageNumber = request.PageNumber <= 0 ? 1 : request.PageNumber,
-                    PageSize = request.PageSize <= 0 || request.PageSize > 10000 ? 10 : request.PageSize
-                };
+            using var cmd = new SqlCommand(
+                "[dbo].[P_GET_CASES]",
+                connection)
+            {
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 30
+            };
 
-                using var connection = _connectionFactory.CreateMsSqlConnection();
-                await connection.OpenAsync();
 
-               
+            cmd.Parameters
+                .Add(
+                    "@CaseNo",
+                    SqlDbType.NVarChar,
+                    100)
+                .Value =
+                    (object?)request.CaseNo ??
+                    DBNull.Value;
 
-                using var cmd = new SqlCommand("[dbo].[P_GET_CASES]", connection)
-                {
-                    CommandType = CommandType.StoredProcedure,
-                    CommandTimeout = 30
-                };
 
-                cmd.Parameters.Add("@CaseNo", SqlDbType.NVarChar, 100).Value =
-                    (object?)request.CaseNo ?? DBNull.Value;
-
-                    cmd.Parameters.Add("@JudgeIds", SqlDbType.NVarChar).Value =
+            cmd.Parameters
+                .Add(
+                    "@JudgeIds",
+                    SqlDbType.NVarChar,
+                    -1)
+                .Value =
                     request.JudgeIds is { Count: > 0 }
                         ? string.Join(",", request.JudgeIds)
                         : DBNull.Value;
 
-                    cmd.Parameters.Add("@CaseTypeIds", SqlDbType.NVarChar).Value =
+
+            cmd.Parameters
+                .Add(
+                    "@CaseTypeIds",
+                    SqlDbType.NVarChar,
+                    -1)
+                .Value =
                     request.CaseTypeIds is { Count: > 0 }
                         ? string.Join(",", request.CaseTypeIds)
                         : DBNull.Value;
 
 
-                cmd.Parameters.Add("@CourtId", SqlDbType.Int).Value =
-                    (object?)request.CourtId ?? DBNull.Value;
+            cmd.Parameters
+                .Add(
+                    "@CourtId",
+                    SqlDbType.Int)
+                .Value =
+                    (object?)request.CourtId ??
+                    DBNull.Value;
 
 
-                cmd.Parameters.Add("@CaseStatus", SqlDbType.Int).Value =
-                    (object?)request.CaseStatus ?? DBNull.Value;
-
-                cmd.Parameters.Add("@OnlyWarningsCases", SqlDbType.Bit).Value =
-                  (object?)request.OnlyWarningsCases ?? DBNull.Value;
-
-                cmd.Parameters.Add("@StartDate", SqlDbType.Date).Value =
-                    (object?)request.StartDate ?? DBNull.Value;
-
-                cmd.Parameters.Add("@EndDate", SqlDbType.Date).Value =
-                    (object?)request.EndDate ?? DBNull.Value;
-
-                cmd.Parameters.Add("@PageNumber", SqlDbType.Int).Value = result.PageNumber;
-                cmd.Parameters.Add("@PageSize", SqlDbType.Int).Value = result.PageSize;
-
-                using var reader = await cmd.ExecuteReaderAsync();
-
-                while (await reader.ReadAsync())
-                {
-                    if (result.TotalCount == 0)
-                    {
-                        result.TotalCount = reader.SafeGet<int>("TOTAL_COUNT");
-                    }
-
-                    result.Items.Add(new CaseListDto
-                    {
-                        Id = reader.SafeGet<long>("ID"),
-                        CaseNo = reader.SafeGet<string?>("CASE_NO"),
-                        Type = reader.SafeGet<string?>("TYPE"),
-                        CourtName = reader.SafeGet<string?>("COURT_NAME"),
-                        JudgeName = reader.SafeGet<string?>("JUDGE_NAME"),
-                        CaseStatus = reader.SafeGet<string?>("CASE_STATUS"),
-                        EnterDate = reader.SafeGet<DateTime?>("ENTER_DATE"),
-                        CategoryId = reader.SafeGet<int?>("CATEGORY_ID"),
-                        SubCategoryId = reader.SafeGet<int?>("SUB_CATEGORY_ID"),
-                        Year = reader.SafeGet<int?>("YEAR"),
-                        Result = reader.SafeGet<string?>("RESULT"),
-                        HasNewNotification = reader.SafeGet<bool>("HAS_NEW_NOTIFICATION"),
-                        CourtLevelId = reader.SafeGet<int>("COURT_LEVEL_ID"),
-                        CourtLevelName = reader.SafeGet<string>("COURT_LEVEL_NAME"),
-                        IsAnalizeSuccess = reader.SafeGet<bool?>("IS_ANALIZE_SUCCESS")
-                    });
-                }
+            cmd.Parameters
+                .Add(
+                    "@CaseStatus",
+                    SqlDbType.NVarChar,
+                    -1)
+                .Value =
+                    request.CaseStatus is { Count: > 0 }
+                        ? string.Join(",", request.CaseStatus)
+                        : DBNull.Value;
 
 
-                return result;
-            }
-            catch (Exception ex)
+            cmd.Parameters
+                .Add(
+                    "@OnlyWarningsCases",
+                    SqlDbType.Bit)
+                .Value =
+                    (object?)request.OnlyWarningsCases ??
+                    DBNull.Value;
+
+
+            cmd.Parameters
+                .Add(
+                    "@StartDate",
+                    SqlDbType.Date)
+                .Value =
+                    (object?)request.StartDate ??
+                    DBNull.Value;
+
+
+            cmd.Parameters
+                .Add(
+                    "@EndDate",
+                    SqlDbType.Date)
+                .Value =
+                    (object?)request.EndDate ??
+                    DBNull.Value;
+
+            cmd.Parameters
+                .Add(
+                    "@CourtLevelId",
+                    SqlDbType.Int)
+                .Value =
+                    (object?)request.CourtLevelId ??
+                    DBNull.Value;
+
+            // Server-derived RO filter. NULL is allowed only for Admin/RO_00.
+            cmd.Parameters
+                .Add(
+                    "@OFFICE_KEY_CODE",
+                    SqlDbType.VarChar,
+                    10)
+                .Value =
+                    (object?)officeKeyCode ??
+                    DBNull.Value;
+
+
+            cmd.Parameters
+                .Add(
+                    "@PageNumber",
+                    SqlDbType.Int)
+                .Value = result.PageNumber;
+
+
+            cmd.Parameters
+                .Add(
+                    "@PageSize",
+                    SqlDbType.Int)
+                .Value = result.PageSize;
+
+
+
+            using var reader =
+                await cmd.ExecuteReaderAsync();
+
+
+            /* ==========================================
+               1. Cases
+               ========================================== */
+
+            while (await reader.ReadAsync())
             {
+                result.Items.Add(
+                    new CaseListDto
+                    {
+                        Id =
+                            reader.SafeGet<long>("ID"),
 
-                throw;
+                        CaseNo =
+                            reader.SafeGet<string?>(
+                                "CASE_NO"),
+
+                        Type =
+                            reader.SafeGet<string?>(
+                                "TYPE"),
+
+                        CourtName =
+                            reader.SafeGet<string?>(
+                                "COURT_NAME"),
+
+                        JudgeName =
+                            reader.SafeGet<string?>(
+                                "JUDGE_NAME"),
+
+                        CaseStatus =
+                            reader.SafeGet<string?>(
+                                "CASE_STATUS"),
+
+                        EnterDate =
+                            reader.SafeGet<DateTime?>(
+                                "ENTER_DATE"),
+
+                        CategoryId =
+                            reader.SafeGet<int?>(
+                                "CATEGORY_ID"),
+
+                        SubCategoryId =
+                            reader.SafeGet<int?>(
+                                "SUB_CATEGORY_ID"),
+
+                        Year =
+                            reader.SafeGet<int?>(
+                                "YEAR"),
+
+                        Result =
+                            reader.SafeGet<string?>(
+                                "RESULT"),
+
+                        HasNewNotification =
+                            reader.SafeGet<bool>(
+                                "HAS_NEW_NOTIFICATION"),
+
+                        CourtLevelId =
+                            reader.SafeGet<int>(
+                                "COURT_LEVEL_ID"),
+
+                        CourtLevelName =
+                            reader.SafeGet<string>(
+                                "COURT_LEVEL_NAME"),
+
+                        IsAnalizeSuccess =
+                            reader.SafeGet<bool?>(
+                                "IS_ANALIZE_SUCCESS")
+                    });
             }
+
+
+            /* ==========================================
+               2. Pagination
+               ========================================== */
+
+            if (await reader.NextResultAsync() &&
+                await reader.ReadAsync())
+            {
+                result.TotalCount =
+                    reader.SafeGet<int>(
+                        "TOTAL_COUNT");
+
+                /*
+                    PageNumber və PageSize onsuz da yuxarıda
+                    result-a yazılıb.
+
+                    TotalPages / HasNext / HasPrevious isə
+                    PagedResult özü hesablayır.
+                */
+            }
+
+
+            return result;
+        }
+
+        // Returns false for unknown case IDs and for cases outside the user's RO.
+        // Used by case detail, PDF, case notifications and notification authorization.
+        public async Task<bool> CanAccessCaseAsync(long caseId, string? officeKeyCode)
+        {
+            await using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+            await using var cmd = new SqlCommand(@"
+                SELECT CASE WHEN EXISTS (
+                    SELECT 1 FROM dbo.TBL_CASES C
+                    WHERE C.ID = @CASE_ID
+                      AND (@OFFICE_KEY_CODE IS NULL OR EXISTS (
+                          SELECT 1 FROM dbo.TBL_CASE_ANALYSIS_RESULT CAR
+                          WHERE CAR.CASE_ID = C.ID
+                            AND CAR.OFFICE_KEY_CODE = @OFFICE_KEY_CODE
+                      ))
+                ) THEN 1 ELSE 0 END", connection);
+            cmd.Parameters.Add("@CASE_ID", SqlDbType.BigInt).Value = caseId;
+            cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value =
+                (object?)officeKeyCode ?? DBNull.Value;
+            return Convert.ToInt32(await cmd.ExecuteScalarAsync()) == 1;
+        }
+
+        // Batch check for case references inside case/notification details.
+        public async Task<HashSet<long>> GetAccessibleCaseIdsAsync(
+            IEnumerable<long> caseIds, string officeKeyCode)
+        {
+            var ids = caseIds.Distinct().Where(id => id > 0).ToArray();
+            if (ids.Length == 0) return new HashSet<long>();
+
+            await using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+            await using var cmd = new SqlCommand(@"
+                SELECT DISTINCT C.ID
+                FROM dbo.TBL_CASES C
+                WHERE C.ID IN (
+                    SELECT TRY_CONVERT(BIGINT, value)
+                    FROM STRING_SPLIT(@CASE_IDS, ',')
+                )
+                AND EXISTS (
+                    SELECT 1 FROM dbo.TBL_CASE_ANALYSIS_RESULT CAR
+                    WHERE CAR.CASE_ID = C.ID
+                      AND CAR.OFFICE_KEY_CODE = @OFFICE_KEY_CODE
+                )", connection);
+            cmd.Parameters.Add("@CASE_IDS", SqlDbType.NVarChar, -1).Value = string.Join(",", ids);
+            cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
+            var result = new HashSet<long>();
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync()) result.Add(reader.GetInt64(0));
+            return result;
         }
 
         public async Task<CaseDetailDto?> GetCaseAsync(long caseId)
@@ -222,7 +423,12 @@ namespace CmsApi.Repositories.Implementations
                     Judge = reader["JUDGE"]?.ToString(),
                     MeetingType = reader["MEETING_TYPE"]?.ToString(),
                     MeetingDate = reader["MEETING_DATE"] as DateTime?,
-                    Status = reader.SafeGet<string>("STATUS")
+                    Status = reader.SafeGet<string>("STATUS"),
+                    AttendStatus = reader.SafeGet<string>("ATTEND_STATUS"),
+                    AttandDate = reader.SafeGet<DateTime?>("ATTEND_DATE"),
+                    ResponsibleUser = reader.SafeGet<string>("RESPONSIBLE_USER")
+
+
                 });
             }
 
@@ -247,7 +453,7 @@ namespace CmsApi.Repositories.Implementations
                     Attachment = new CaseDocAttachment(
                     reader["ATTACHMENT_IDS"]?.ToString(),
                     reader["FILE_NAME"]?.ToString()),
-                    IsImportant= reader.SafeGet<bool>("IS_IMPORTANT")
+                    IsImportant = reader.SafeGet<bool>("IS_IMPORTANT")
 
                 });
             }
@@ -380,7 +586,7 @@ namespace CmsApi.Repositories.Implementations
                     IsResolved = reader.SafeGet<bool>("IS_RESOLVED"),
                     ResolvedDate = reader.SafeGet<DateTime?>("RESOLVED_DATE"),
                     CreatedDate = reader.SafeGet<DateTime>("CREATED_DATE")
-                 
+
                 });
             }
 
@@ -449,7 +655,7 @@ namespace CmsApi.Repositories.Implementations
             }
         }
 
-        public async Task<CaseStatisticDto?> CaseStatisticAsync()
+        public async Task<CaseStatisticDto?> CaseStatisticAsync(string? officeKeyCode = null)
         {
             using var connection = _connectionFactory.CreateMsSqlConnection();
             await connection.OpenAsync();
@@ -461,6 +667,11 @@ namespace CmsApi.Repositories.Implementations
             {
                 CommandType = CommandType.StoredProcedure
             };
+
+            // Admin/RO_00 continue using the existing procedure signature.
+            // Restricted users require @OFFICE_KEY_CODE support in this procedure.
+            if (officeKeyCode is not null)
+                cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
 
             using var reader = await cmd.ExecuteReaderAsync();
 
@@ -506,6 +717,8 @@ namespace CmsApi.Repositories.Implementations
             return result;
         }
 
+
+
         public async Task<List<CaseDocuments>> CaseDocumentsAsync(long caseId)
         {
             var result = new List<CaseDocuments>();
@@ -544,9 +757,9 @@ namespace CmsApi.Repositories.Implementations
             return result;
         }
 
-        public async Task<List<CaseStatusStatisticDto>> GetCaseStatusStatisticsAsync()
+        public async Task<List<CaseStatusStatisticDto>> GetCaseStatusStatisticsAsync(string? officeKeyCode = null)
         {
-          
+
             var result = new List<CaseStatusStatisticDto>();
 
             await using var connection = _connectionFactory.CreateMsSqlConnection();
@@ -556,6 +769,11 @@ namespace CmsApi.Repositories.Implementations
             {
                 CommandType = CommandType.StoredProcedure
             };
+
+            // Admin/RO_00 continue using the existing procedure signature.
+            // Restricted users require @OFFICE_KEY_CODE support in this procedure.
+            if (officeKeyCode is not null)
+                cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
 
 
             using var reader = await cmd.ExecuteReaderAsync();
@@ -573,7 +791,7 @@ namespace CmsApi.Repositories.Implementations
             return result;
         }
 
-        public async Task<List<CourtLevelStatisticDto>> GetCourtLevelCaseStatisticsAsync(CourtLevelStatisticRequestDto request)
+        public async Task<List<CourtLevelStatisticDto>> GetCourtLevelCaseStatisticsAsync(CourtLevelStatisticRequestDto request, string? officeKeyCode = null)
         {
             var result = new List<CourtLevelStatisticDto>();
 
@@ -584,6 +802,11 @@ namespace CmsApi.Repositories.Implementations
             {
                 CommandType = CommandType.StoredProcedure
             };
+
+            // Admin/RO_00 continue using the existing procedure signature.
+            // Restricted users require @OFFICE_KEY_CODE support in this procedure.
+            if (officeKeyCode is not null)
+                cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
 
             cmd.Parameters.AddWithValue(
                  "@CASE_STATUS_ID",
@@ -599,14 +822,14 @@ namespace CmsApi.Repositories.Implementations
                     CourtLevelId = reader.SafeGet<int>("COURT_LEVEL_ID"),
                     CourtLevelName = reader.SafeGet<string>("COURT_LEVEL_NAME"),
                     CaseCount = reader.SafeGet<int?>("CASE_COUNT")
-                   
+
                 });
             }
 
             return result;
         }
 
-        public async Task<List<GetCaseStatisticsByCourtDto>> GetCaseStatisticsByCourtAsync(GetCaseStatisticsByCourtRequestDto request)
+        public async Task<List<GetCaseStatisticsByCourtDto>> GetCaseStatisticsByCourtAsync(GetCaseStatisticsByCourtRequestDto request, string? officeKeyCode = null)
         {
 
             var result = new List<GetCaseStatisticsByCourtDto>();
@@ -618,6 +841,11 @@ namespace CmsApi.Repositories.Implementations
             {
                 CommandType = CommandType.StoredProcedure
             };
+
+            // Admin/RO_00 continue using the existing procedure signature.
+            // Restricted users require @OFFICE_KEY_CODE support in this procedure.
+            if (officeKeyCode is not null)
+                cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
 
             cmd.Parameters.AddWithValue(
                  "@CASE_STATUS_ID",
@@ -648,7 +876,7 @@ namespace CmsApi.Repositories.Implementations
 
 
         public async Task<List<CaseTotalByYearStatisticDto>> GetCaseTotalByYearStatisticsAsync(
-    CaseTotalByYearStatisticRequestDto request)
+    CaseTotalByYearStatisticRequestDto request, string? officeKeyCode = null)
         {
             var result = new List<CaseTotalByYearStatisticDto>();
 
@@ -659,6 +887,11 @@ namespace CmsApi.Repositories.Implementations
             {
                 CommandType = CommandType.StoredProcedure
             };
+
+            // Admin/RO_00 continue using the existing procedure signature.
+            // Restricted users require @OFFICE_KEY_CODE support in this procedure.
+            if (officeKeyCode is not null)
+                cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
 
             cmd.Parameters.AddWithValue("@Year",
                 request.Year == 0 ? DBNull.Value : request.Year);
@@ -873,5 +1106,31 @@ namespace CmsApi.Repositories.Implementations
 
             await command.ExecuteNonQueryAsync();
         }
+
+
+        public async Task<long> UpsertCaseAnalysisResultAsync(
+            CaseAnalysisResultRequestDto payload)
+        {
+            await using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+            await using var command = new SqlCommand(
+                "dbo.P_CASE_ANALYSIS_RESULT_UPSERT",
+                connection);
+            command.CommandType = CommandType.StoredProcedure;
+            command.Parameters.Add("@CASE_ID", SqlDbType.BigInt)
+                .Value = payload.CaseId;
+            command.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10)
+                .Value = (object?)payload.OfficeKeyCode ?? DBNull.Value;
+            command.Parameters.Add("@CASE_SUBJECT_KEY_CODE", SqlDbType.VarChar, 10)
+                .Value = (object?)payload.CaseSubjectKeyCode ?? DBNull.Value;
+            command.Parameters.Add("@EXECUTER_USER_ID", SqlDbType.Int)
+                .Value = (object?)payload.ExecuterUserId ?? DBNull.Value;
+
+            var result = await command.ExecuteScalarAsync();
+
+            return Convert.ToInt64(result);
+        }
+
+
     }
 }
