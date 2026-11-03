@@ -3,6 +3,7 @@ using CmsApi.DTOs.CaseDtos;
 using CmsApi.Repositories.Interfaces;
 using CmsApi.Services.Interfaces;
 using CmsApi.Security;
+using CmsApi.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -80,11 +81,33 @@ namespace CmsApi.Controllers
             // RoleId = 1 (Admin) and RO_00 can see all cases.
             // Every other user must have an assigned office.
             var isAdmin = user.RoleId == 1;
+
+            // The analysis dashboard filters are available only to administrators.
+            // Resolve roles from the database rather than trusting request/JWT role strings.
+            request.AnalysisStatFilter =
+                string.IsNullOrWhiteSpace(request.AnalysisStatFilter)
+                    ? null
+                    : request.AnalysisStatFilter.Trim();
+
+            if (!CaseAnalysisStatFilters.IsValid(request.AnalysisStatFilter))
+            {
+                return BadRequest(
+                    ApiResponse<object>.Fail("Invalid analysisStatFilter."));
+            }
+
             var userOffice = user.OfficeKeyCode?.Trim();
             var isHeadOffice = string.Equals(
-                userOffice,
-                "RO_00",
-                StringComparison.OrdinalIgnoreCase);
+            userOffice,
+            "RO_00",
+            StringComparison.OrdinalIgnoreCase);
+
+            if (request.AnalysisStatFilter is not null && !isAdmin && !isHeadOffice)
+            {
+                return StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    ApiResponse<object>.Fail(
+                        "Analysis statistics filters are available to Admin or RO_00 only."));
+            }
 
             if (!isAdmin && !isHeadOffice &&
                 string.IsNullOrWhiteSpace(userOffice))

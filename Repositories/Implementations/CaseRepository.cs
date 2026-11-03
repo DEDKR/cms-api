@@ -171,7 +171,12 @@ namespace CmsApi.Repositories.Implementations
                     SqlDbType.Int)
                 .Value = result.PageSize;
 
-
+            // Optional filter for the Admin analysis statistics cards.
+            cmd.Parameters
+                .Add("@AnalysisStatFilter", SqlDbType.VarChar, 50)
+                .Value = string.IsNullOrWhiteSpace(request.AnalysisStatFilter)
+                    ? DBNull.Value
+                    : request.AnalysisStatFilter.Trim();
 
             using var reader =
                 await cmd.ExecuteReaderAsync();

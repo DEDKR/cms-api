@@ -8,6 +8,7 @@ namespace CmsApi.Controllers;
 
 [ApiController]
 [Route("api/Admin/analysis-statistics")]
+[Authorize(Policy = "AdminOrRO00")]
 //[Authorize(Roles = "Admin,Kurator")]
 public sealed class CaseAnalysisStatisticsController : ControllerBase
 {

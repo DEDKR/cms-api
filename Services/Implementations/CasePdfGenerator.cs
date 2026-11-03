@@ -1,4 +1,4 @@
-﻿using CmsApi.DTOs.CaseDtos;
+using CmsApi.DTOs.CaseDtos;
 using CmsApi.Services.Interfaces;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -681,7 +681,7 @@ namespace CmsApi.Services.Implementations
             string? text)
         {
             container
-                .BorderBottom(0.5f)
+                .Border(0.5f)
                 .BorderColor(Colors.Grey.Lighten2)
                 .Padding(5)
                 .Text(Value(text))

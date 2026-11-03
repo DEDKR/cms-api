@@ -120,9 +120,9 @@ namespace CmsApi.Controllers
             if (status is not (1 or 2) || (status == 2 && normalizedNote is null) ||
                 normalizedNote?.Length > 1500 || meetings.Length == 0 || users.Length == 0 ||
                 meetings.Any(x => x <= 0) || users.Any(x => x <= 0) ||
-                meetings.Length > 200 || users.Length > 200 || (long)meetings.Length * users.Length > 10000)
+                meetings.Length > 200 || users.Length != 1)
                 return BadRequest(ApiResponse<object>.Fail(
-                    "İclas/istifadəçi siyahısı və ya iştirak statusu düzgün deyil. İştirak etmədikdə qeyd məcburidir."));
+                    "Hər sorğuda yalnız bir istifadəçi seçilə bilər. İştirak etmədikdə qeyd məcburidir."));
 
             if (!permission.CanManageOthers && users.Any(x => x != permission.UserId))
                 return Forbid();
@@ -144,6 +144,11 @@ namespace CmsApi.Controllers
             catch (SqlException ex) when (ex.Number == 51003)
             {
                 return BadRequest(ApiResponse<object>.Fail("İştirak statusu və ya qeyd düzgün deyil."));
+            }
+            catch (SqlException ex) when (ex.Number is 51004 or 2601 or 2627)
+            {
+                return Conflict(ApiResponse<object>.Fail(
+                    "Bu iclas üzrə artıq başqa istifadəçinin iştirakı qeydə alınıb. İştirakçını dəyişmək olmaz.", 409));
             }
         }
     }

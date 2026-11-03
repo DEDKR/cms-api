@@ -24,6 +24,19 @@ namespace CmsApi
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddPolicy("AdminOrRO00", policy =>
+                {
+                    policy.RequireAuthenticatedUser();
+
+                    policy.RequireAssertion(context =>
+                        context.User.IsInRole("Admin") ||
+                        context.User.FindFirst("officeKeyCode")?.Value == "RO_00"
+                    );
+                });
+            });
+
             QuestPDF.Settings.License = LicenseType.Evaluation; // QuestPDF license 
 
             builder.Services.AddScoped<IDbConnectionFactory, DbConnectionFactory>();
