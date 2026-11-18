@@ -1,4 +1,5 @@
 using CmsApi.DB;
+using CmsApi.DTOs.AnalysisDtos;
 using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.CaseDtos;
 using CmsApi.DTOs.Dashboard;
@@ -612,6 +613,139 @@ namespace CmsApi.Repositories.Implementations
 
             #endregion
 
+            #region CaseAnalysisDetail
+
+            // 1. Əsas analiz məlumatları
+
+            await reader.NextResultAsync();
+
+            if (await reader.ReadAsync())
+            {
+                result.AnalysisDetail = new CaseAnalysisDetailDto
+                {
+                    CarId = reader.SafeGet<long>("CAR_ID"),
+                    CaseId = reader.SafeGet<long>("CASE_ID"),
+
+                    Office = ReadAnalysisField<string>(
+                        reader, "OFFICE"),
+
+                    AnalyzeBy = reader.SafeGet<string?>("ANALYZE_BY"),
+                    CreatedDate = reader.SafeGet<DateTime>("CREATED_DATE"),
+
+                    Parties = new(),
+                    Properties = new(),
+                    PropertyProblems = new(),
+                    Claims = new()
+                };
+            }
+
+            // 2. Məhkəmə işinin tərəfləri
+
+            await reader.NextResultAsync();
+
+            while (await reader.ReadAsync())
+            {
+                result.AnalysisDetail?.Parties.Add(new CasePartyDto
+                {
+                   
+                    Type = reader.SafeGet<string?>("TYPE"),
+                    Name = reader.SafeGet<string?>("NAME"),
+                    ApplicantLabel = reader.SafeGet<string?>("APPLICANT_LABEL")
+                });
+            }
+
+            // 3. Əmlak məlumatları
+
+            await reader.NextResultAsync();
+
+            while (await reader.ReadAsync())
+            {
+                result.AnalysisDetail?.Properties.Add(
+                    new CaseAnalysisPropertyDto
+                    {
+                        Id = reader.SafeGet<long>("ID"),
+                        CarId = reader.SafeGet<long>("CAR_ID"),
+                        CaseId = reader.SafeGet<long>("CASE_ID"),
+
+                        PropertyType = ReadAnalysisField<string>(
+                            reader, "PROPERTY_TYPE"),
+
+                        PropertyAddress = ReadAnalysisField<string>(
+                            reader, "PROPERTY_ADDRESS"),
+
+                        PropertyArea = ReadAnalysisField<decimal?>(
+                            reader, "PROPERTY_AREA"),
+
+                        AreaUnit = ReadAnalysisField<string>(
+                            reader, "AREA_UNIT"),
+
+                        RegistryNumber = ReadAnalysisField<string>(
+                            reader, "REGISTRY_NUMBER"),
+
+                        RegistrationNumber = ReadAnalysisField<string>(
+                            reader, "REGISTRATION_NUMBER"),
+
+                        CadastralNumber = ReadAnalysisField<string>(
+                            reader, "CADASTRAL_NUMBER"),
+
+                        Description = ReadAnalysisField<string>(
+                            reader, "DESCRIPTION")
+                    });
+            }
+
+            // 4. Əmlak problemləri
+
+            await reader.NextResultAsync();
+
+            while (await reader.ReadAsync())
+            {
+                result.AnalysisDetail?.PropertyProblems.Add(
+                    new CaseAnalysisPropertyProblemDto
+                    {
+                        Id = reader.SafeGet<long>("ID"),
+                        CarId = reader.SafeGet<long>("CAR_ID"),
+                        CaseId = reader.SafeGet<long>("CASE_ID"),
+
+                        PropertyProblem = ReadAnalysisField<string>(
+                            reader, "PROPERTY_PROBLEM")
+                    });
+            }
+
+            // 5. İddia və qərar məlumatları
+
+            await reader.NextResultAsync();
+
+            while (await reader.ReadAsync())
+            {
+                result.AnalysisDetail?.Claims.Add(
+                    new CaseAnalysisClaimDto
+                    {
+                        Id = reader.SafeGet<long>("ID"),
+                        CarId = reader.SafeGet<long>("CAR_ID"),
+                        CaseId = reader.SafeGet<long>("CASE_ID"),
+
+                        ClaimType = ReadAnalysisField<string>(
+                            reader, "CLAIM_TYPE"),
+
+                        ClaimText = ReadAnalysisField<string>(
+                            reader, "CLAIM_TEXT"),
+
+                        DecisionResult = ReadAnalysisField<string>(
+                            reader, "DECISION_RESULT"),
+
+                        DecisionFavor = ReadAnalysisField<string>(
+                            reader, "DECISION_FAVOR"),
+
+                        DecisionText = ReadAnalysisField<string>(
+                            reader, "DECISION_TEXT")
+                    });
+            }
+
+            #endregion
+
+            return result;
+
+
             return result;
         }
 
@@ -1136,6 +1270,23 @@ namespace CmsApi.Repositories.Implementations
             return Convert.ToInt64(result);
         }
 
+        private static readonly JsonSerializerOptions _jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
 
+        private static AnalysisFieldDto<T>? ReadAnalysisField<T>(
+            SqlDataReader reader,
+            string columnName)
+        {
+            var json = reader.SafeGet<string?>(columnName);
+
+            if (string.IsNullOrWhiteSpace(json))
+                return null;
+
+            return JsonSerializer.Deserialize<AnalysisFieldDto<T>>(
+                json,
+                _jsonOptions);
+        }
     }
 }
