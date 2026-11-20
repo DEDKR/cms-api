@@ -6,6 +6,8 @@
 
         public byte? RoleId { get; set; }
 
+        public string? OfficeKeyCode { get; set; }
+
         public string Role {  get; set; }
 
 

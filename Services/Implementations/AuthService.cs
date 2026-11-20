@@ -10,17 +10,20 @@ namespace CmsApi.Services.Implementations
         private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly IPasswordService _passwordService;
+        private readonly IPasswordPolicyService _passwordPolicyService;
         private readonly ITokenService _tokenService;
 
         public AuthService(
             IUserRepository userRepository,
             ITokenRepository tokenRepository,
             IPasswordService passwordService,
+            IPasswordPolicyService passwordPolicyService,
             ITokenService tokenService)
         {
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
             _passwordService = passwordService;
+            _passwordPolicyService = passwordPolicyService;
             _tokenService = tokenService;
         }
 
@@ -131,6 +134,8 @@ namespace CmsApi.Services.Implementations
                     User = new UserDto
                     {
                         UserId = user.UserId,
+                        RoleId = user.RoleId,
+                        OfficeKeyCode = user.OfficeKeyCode,
                         Username = user.Username,
                         RoleName = user.Role,
                         FullName = user.FirstName + " " + user.LastName + " " + user.FatherName,
@@ -261,10 +266,14 @@ namespace CmsApi.Services.Implementations
                     "Password information is required");
             }
 
-            if (request.NewPassword.Length < 8)
+            // Apply the same password policy formerly used during user creation.
+            var passwordPolicyError = _passwordPolicyService.Validate(
+                request.NewPassword,
+                passwordRequired: true);
+
+            if (passwordPolicyError is not null)
             {
-                throw new ArgumentException(
-                    "Password must contain at least 8 characters");
+                throw new ArgumentException(passwordPolicyError);
             }
 
             // User-i tapırıq.

@@ -1,4 +1,4 @@
-﻿using CmsApi.DB;
+using CmsApi.DB;
 using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.NotificationDtos;
 using CmsApi.Entities;
@@ -18,12 +18,16 @@ namespace CmsApi.Repositories.Implementations
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<int> GetNewNotificationsCount()
+        public async Task<int> GetNewNotificationsCount(string? officeKeyCode = null)
         {
             await using var connection = _connectionFactory.CreateMsSqlConnection();
             using var command = new SqlCommand("P_GET_UNREAD_NOTIFICATION_COUNT", connection);
 
             command.CommandType = CommandType.StoredProcedure;
+
+            // Regional users require an office-aware SQL procedure. Admin/RO_00 unchanged.
+            if (officeKeyCode is not null)
+                command.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
 
             await connection.OpenAsync();
 
@@ -32,6 +36,17 @@ namespace CmsApi.Repositories.Implementations
             return result != null && result != DBNull.Value
                 ? Convert.ToInt32(result)
                 : 0;
+        }
+
+        public async Task<long?> GetNotificationCaseIdAsync(long notificationId)
+        {
+            await using var connection = _connectionFactory.CreateMsSqlConnection();
+            await connection.OpenAsync();
+            await using var cmd = new SqlCommand(
+                "SELECT TOP (1) CASE_ID FROM dbo.TBL_NOTIFICATIONS WHERE ID = @Id", connection);
+            cmd.Parameters.Add("@Id", SqlDbType.BigInt).Value = notificationId;
+            var result = await cmd.ExecuteScalarAsync();
+            return result is null or DBNull ? null : Convert.ToInt64(result);
         }
 
         public async Task<NotificationDetailDto?> GetNotificationDetailAsync(long notificationId)
@@ -80,7 +95,7 @@ namespace CmsApi.Repositories.Implementations
             return result;
         }
 
-        public async Task<PagedResult<NotificationListItemDto>> GetNotifications(NoitifcationRequestDto request)
+        public async Task<PagedResult<NotificationListItemDto>> GetNotifications(NoitifcationRequestDto request, string? officeKeyCode = null)
         {
             var result = new PagedResult<NotificationListItemDto>
             {
@@ -92,6 +107,10 @@ namespace CmsApi.Repositories.Implementations
 
             await using var cmd = new SqlCommand("dbo.P_GET_NOTIFICATIONS", connection);
             cmd.CommandType = CommandType.StoredProcedure;
+
+            // Regional users require an office-aware SQL procedure. Admin/RO_00 unchanged.
+            if (officeKeyCode is not null)
+                cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
 
             cmd.Parameters.AddWithValue("@CourtId", (object?)request.CourtId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@StartDate", (object?)request.StartDate ?? DBNull.Value);
@@ -128,7 +147,7 @@ namespace CmsApi.Repositories.Implementations
         }
 
         public async Task<NotificationStatisticDto> GetNotificationStatistics(
-             NotificationStatisticRequestDto request)
+             NotificationStatisticRequestDto request, string? officeKeyCode = null)
         {
             var result = new NotificationStatisticDto();
 
@@ -137,6 +156,10 @@ namespace CmsApi.Repositories.Implementations
 
             await using var cmd = new SqlCommand("dbo.P_GET_NOTIFICATION_STATISTICS", connection);
             cmd.CommandType = CommandType.StoredProcedure;
+
+            // Regional users require an office-aware SQL procedure. Admin/RO_00 unchanged.
+            if (officeKeyCode is not null)
+                cmd.Parameters.Add("@OFFICE_KEY_CODE", SqlDbType.VarChar, 10).Value = officeKeyCode;
 
             cmd.Parameters.AddWithValue("@InsertDate", (object?)request.InsertDate ?? DBNull.Value);
 

@@ -1,4 +1,4 @@
-﻿namespace CmsApi.Extensions
+namespace CmsApi.Extensions
 {
     public static class CorsExtensions
     {
@@ -19,6 +19,7 @@
                     policy
                         .WithOrigins(origins!)
                         .AllowAnyHeader()
+                        .WithExposedHeaders("Retry-After")
                         //.AllowCredentials()
                         .AllowAnyMethod();
                 });

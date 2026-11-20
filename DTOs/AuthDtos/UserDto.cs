@@ -5,6 +5,7 @@
         public int UserId { get; set; }
 
         public byte? RoleId { get; set; }
+        public string? OfficeKeyCode { get; set; }
         public string RoleName { get; set; }
         public string Username { get; set; } = string.Empty;
         public string FullName { get; set; }

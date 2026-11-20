@@ -37,7 +37,15 @@ namespace CmsApi.Services.Implementations
 
                 new(
                     ClaimTypes.Role,
-                    user.Role?.Trim() ?? string.Empty)
+                    user.Role?.Trim() ?? string.Empty),
+
+                new(
+                    "roleId",
+                    user.RoleId?.ToString() ?? string.Empty),
+
+                new(
+                    "officeKeyCode",
+                    user.OfficeKeyCode?.Trim() ?? string.Empty)
             };
 
             var key = new SymmetricSecurityKey(

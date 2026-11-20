@@ -7,5 +7,8 @@
         public string MeetingType { get; set; }
         public DateTime? MeetingDate { get; set; }
         public string Status { get; set; }
+        public string? AttendStatus { get; set; }
+        public DateTime? AttandDate { get; set; }
+        public string? ResponsibleUser { get; set; }
     }
 }

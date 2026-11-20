@@ -1,4 +1,4 @@
-﻿using CmsApi.DTOs.ApiDtos;
+using CmsApi.DTOs.ApiDtos;
 using CmsApi.DTOs.NotificationDtos;
 using CmsApi.Http.Handlers.Interfaces;
 using CmsApi.Repositories.Interfaces;
@@ -16,9 +16,9 @@ namespace CmsApi.Services.Implementations
             _httpHandler = httpHandler;
         }
 
-        public async Task<int> GetNewNotificationsCount()
+        public async Task<int> GetNewNotificationsCount(string? officeKeyCode = null)
         {
-            return await _notificationRepository.GetNewNotificationsCount();
+            return await _notificationRepository.GetNewNotificationsCount(officeKeyCode);
         }
 
         public async Task<NotificationDetailDto> GetNotificationDetailDtoAsync(long id)
@@ -37,14 +37,14 @@ namespace CmsApi.Services.Implementations
             return notification;
         }
 
-        public Task<PagedResult<NotificationListItemDto>> GetNotifications(NoitifcationRequestDto noitifcationRequestDto)
+        public Task<PagedResult<NotificationListItemDto>> GetNotifications(NoitifcationRequestDto noitifcationRequestDto, string? officeKeyCode = null)
         {
-            return _notificationRepository.GetNotifications(noitifcationRequestDto);
+            return _notificationRepository.GetNotifications(noitifcationRequestDto, officeKeyCode);
         }
 
-        public async Task<NotificationStatisticDto> GetNotificationStatistics(NotificationStatisticRequestDto notificationStatisticRequestDto)
+        public async Task<NotificationStatisticDto> GetNotificationStatistics(NotificationStatisticRequestDto notificationStatisticRequestDto, string? officeKeyCode = null)
         {
-            return await _notificationRepository.GetNotificationStatistics(notificationStatisticRequestDto);
+            return await _notificationRepository.GetNotificationStatistics(notificationStatisticRequestDto, officeKeyCode);
         }
 
         public async Task<int> MakeReadNotification(long id)

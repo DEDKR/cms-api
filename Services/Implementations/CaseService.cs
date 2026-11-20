@@ -1,4 +1,4 @@
-﻿using CmsApi.DTOs.CaseDtos;
+using CmsApi.DTOs.CaseDtos;
 using CmsApi.Enums;
 using CmsApi.Repositories.Interfaces;
 using CmsApi.Services.Interfaces;
@@ -12,11 +12,13 @@ namespace CmsApi.Services.Implementations
     {
         private readonly IDocumentService _documentService;
         private readonly ICaseRepository _caseRepository;
+        private readonly ICasePdfGenerator _casePdfGenerator;
 
-        public CaseService(IDocumentService documentService, ICaseRepository caseRepository)
+        public CaseService(IDocumentService documentService, ICaseRepository caseRepository, ICasePdfGenerator casePdfGenerator)
         {
             _documentService = documentService;
             _caseRepository = caseRepository;
+            _casePdfGenerator = casePdfGenerator;
         }
 
         public async Task AnalizeCase(long caseId)
@@ -510,6 +512,42 @@ namespace CmsApi.Services.Implementations
         }
 
 
+        public async Task<long> UpsertCaseAnalysisResultAsync(CaseAnalysisResultRequestDto payload)
+        {
+            var result = await _caseRepository.UpsertCaseAnalysisResultAsync(payload);
+
+            if (payload.CaseId.HasValue)
+            {
+                // Admin dəyəri əl ilə seçibsə, həmin xəbərdarlığı bağlayırıq.
+                if (!string.IsNullOrWhiteSpace(payload.OfficeKeyCode))
+                {
+                    await _caseRepository.UpdateCaseWarnings(
+                        payload.CaseId.Value,
+                        (int)CaseAnalysisWarningType.EnforcementAuthorityNotFound);
+                }
+
+                if (!string.IsNullOrWhiteSpace(payload.CaseSubjectKeyCode))
+                {
+                    await _caseRepository.UpdateCaseWarnings(
+                        payload.CaseId.Value,
+                        (int)CaseAnalysisWarningType.CaseSubjectNotFound);
+                }
+            }
+
+            return result;
+        }
+
+        public async Task<byte[]?> GetCasePdfAsync(long caseId)
+        {
+            var caseDetail = await _caseRepository.GetCaseAsync(caseId);
+
+            if (caseDetail is null)
+                return null;
+
+            var pdf = _casePdfGenerator.Generate(caseDetail);
+
+            return pdf;
+        }
 
 
     }
